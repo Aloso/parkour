@@ -1,50 +1,22 @@
 use std::time::Instant;
 
-use palr::args::{Argument, Command, NamedArg, Number, PositionalArg, Value, ValueTrait};
+use palr::args::{Command, NamedArg, Number, PositionalArg, Value, ValueTrait};
 use palr::input::PalrInput;
 use palr::{PalrParse, ValueResultTrait};
 
 fn main() {
     let start = Instant::now();
 
-    let command = Command {
-        names: vec!["colo".into()],
-        positional_args: vec![],
-        args: vec![
-            Argument::NamedArg(NamedArg {
-                names: vec!["help".into(), "h".into()],
-                value: Value::String,
-                value_count: (0, 0),
-            }),
-            Argument::Command(Command {
-                names: vec!["show".into(), "s".into()],
-                positional_args: vec![PositionalArg {
-                    value: Value::List {
-                        inner: Box::new(Value::String),
-                        value_count: (0, usize::MAX),
-                    },
-                    value_count: (1, 1),
-                }],
-                args: vec![
-                    Argument::NamedArg(NamedArg {
-                        names: vec!["help".into(), "h".into()],
-                        value: Value::String,
-                        value_count: (0, 0),
-                    }),
-                    Argument::NamedArg(NamedArg {
-                        names: vec!["out".into(), "o".into()],
-                        value: Value::Other(Box::new(OutputParser)),
-                        value_count: (1, 1),
-                    }),
-                    Argument::NamedArg(NamedArg {
-                        names: vec!["size".into(), "s".into()],
-                        value: Value::Num(Number::U8 { min: 0, max: 255 }),
-                        value_count: (1, 1),
-                    }),
-                ],
-            }),
-        ],
-    };
+    let command = Command::new("colo")
+        .arg(NamedArg::flag("help").alias("h"))
+        .arg(
+            Command::new("show")
+                .alias("s")
+                .positional_arg(PositionalArg::single(Value::list(Value::String)))
+                .arg(NamedArg::flag("help").alias("h"))
+                .arg(NamedArg::option("out", Value::other(OutputParser)).alias("o"))
+                .arg(NamedArg::option("size", Value::Num(Number::FULL_U8)).alias("s")),
+        );
 
     let mut args = std::env::args();
     let _ = args.next();
