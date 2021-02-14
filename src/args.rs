@@ -1,12 +1,9 @@
 use std::fmt::Debug;
 
-use crate::{input::PalrInput, ArgTraitResult, Error, ValueResultTrait};
-
 #[derive(Debug)]
 pub enum Argument {
     Command(Command),
     NamedArg(NamedArg),
-    Other(Box<dyn ArgumentTrait>),
 }
 
 impl From<Command> for Argument {
@@ -30,11 +27,7 @@ pub struct Command {
 
 impl Command {
     pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            names: vec![name.into()],
-            positional_args: vec![],
-            args: vec![],
-        }
+        Self { names: vec![name.into()], positional_args: vec![], args: vec![] }
     }
 
     pub fn alias(mut self, alias: impl Into<String>) -> Self {
@@ -62,19 +55,11 @@ pub struct NamedArg {
 
 impl NamedArg {
     pub fn flag(name: impl Into<ParamName>) -> Self {
-        Self {
-            names: vec![name.into()],
-            value: Value::String,
-            value_count: (0, 0),
-        }
+        Self { names: vec![name.into()], value: Value::String, value_count: (0, 0) }
     }
 
     pub fn option(name: impl Into<ParamName>, value: Value) -> Self {
-        Self {
-            names: vec![name.into()],
-            value,
-            value_count: (1, 1),
-        }
+        Self { names: vec![name.into()], value, value_count: (1, 1) }
     }
 
     pub fn alias(mut self, alias: impl Into<ParamName>) -> Self {
@@ -118,10 +103,7 @@ pub struct PositionalArg {
 
 impl PositionalArg {
     pub fn single(value: Value) -> Self {
-        Self {
-            value,
-            value_count: (1, 1),
-        }
+        Self { value, value_count: (1, 1) }
     }
 }
 
@@ -142,54 +124,18 @@ pub enum Number {
 }
 
 impl Number {
-    pub const FULL_I128: Number = Number::I128 {
-        min: i128::MIN,
-        max: i128::MAX,
-    };
-    pub const FULL_U128: Number = Number::U128 {
-        min: u128::MIN,
-        max: u128::MAX,
-    };
-    pub const FULL_I64: Number = Number::I64 {
-        min: i64::MIN,
-        max: i64::MAX,
-    };
-    pub const FULL_U64: Number = Number::U64 {
-        min: u64::MIN,
-        max: u64::MAX,
-    };
-    pub const FULL_I32: Number = Number::I32 {
-        min: i32::MIN,
-        max: i32::MAX,
-    };
-    pub const FULL_U32: Number = Number::U32 {
-        min: u32::MIN,
-        max: u32::MAX,
-    };
-    pub const FULL_I16: Number = Number::I16 {
-        min: i16::MIN,
-        max: i16::MAX,
-    };
-    pub const FULL_U16: Number = Number::U16 {
-        min: u16::MIN,
-        max: u16::MAX,
-    };
-    pub const FULL_I8: Number = Number::I8 {
-        min: i8::MIN,
-        max: i8::MAX,
-    };
-    pub const FULL_U8: Number = Number::U8 {
-        min: u8::MIN,
-        max: u8::MAX,
-    };
-    pub const FULL_F64: Number = Number::F64 {
-        min: f64::MIN,
-        max: f64::MAX,
-    };
-    pub const FULL_F32: Number = Number::F32 {
-        min: f32::MIN,
-        max: f32::MAX,
-    };
+    pub const FULL_I128: Number = Number::I128 { min: i128::MIN, max: i128::MAX };
+    pub const FULL_U128: Number = Number::U128 { min: u128::MIN, max: u128::MAX };
+    pub const FULL_I64: Number = Number::I64 { min: i64::MIN, max: i64::MAX };
+    pub const FULL_U64: Number = Number::U64 { min: u64::MIN, max: u64::MAX };
+    pub const FULL_I32: Number = Number::I32 { min: i32::MIN, max: i32::MAX };
+    pub const FULL_U32: Number = Number::U32 { min: u32::MIN, max: u32::MAX };
+    pub const FULL_I16: Number = Number::I16 { min: i16::MIN, max: i16::MAX };
+    pub const FULL_U16: Number = Number::U16 { min: u16::MIN, max: u16::MAX };
+    pub const FULL_I8: Number = Number::I8 { min: i8::MIN, max: i8::MAX };
+    pub const FULL_U8: Number = Number::U8 { min: u8::MIN, max: u8::MAX };
+    pub const FULL_F64: Number = Number::F64 { min: f64::MIN, max: f64::MAX };
+    pub const FULL_F32: Number = Number::F32 { min: f32::MIN, max: f32::MAX };
 }
 
 #[derive(Debug)]
@@ -197,36 +143,11 @@ pub enum Value {
     String,
     Num(Number),
     Enum(Vec<String>),
-    List {
-        inner: Box<Value>,
-        value_count: (usize, usize),
-    },
-    Other(Box<dyn ValueTrait>),
+    List { inner: Box<Value>, value_count: (usize, usize) },
 }
 
 impl Value {
     pub fn list(value: Value) -> Self {
-        Value::List {
-            inner: Box::new(value),
-            value_count: (1, usize::MAX),
-        }
+        Value::List { inner: Box::new(value), value_count: (1, usize::MAX) }
     }
-
-    pub fn other<T: ValueTrait + 'static>(value: T) -> Self {
-        Value::Other(Box::new(value))
-    }
-}
-
-pub trait ArgumentTrait: Debug {
-    fn parse_argument(
-        &self,
-        input: &mut PalrInput,
-    ) -> Result<Option<Box<dyn ArgTraitResult>>, Error>;
-}
-
-pub trait ValueTrait: Debug {
-    fn parse_value(
-        &self,
-        input: &mut PalrInput,
-    ) -> Result<Option<Box<dyn ValueResultTrait>>, Error>;
 }

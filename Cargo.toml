@@ -1,9 +1,15 @@
+[workspace]
+members = ["crates/*"]
+
 [package]
 name = "palr"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
+description = "A fast, small, command-line arguments parser"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+readme = "README.md"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
+palex = { version = "0.1.0", path = "crates/palex" }
+anyhow = "1.0"
