@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use palex::{Input, StringInput};
-use palr::{Error, Parse};
+use palr::{impls::NumberCtx, Error, Parse};
 
 fn main() {
     // Command {
@@ -30,7 +30,9 @@ fn main() {
 
 fn main_() -> Result<Command, Error> {
     let mut input = StringInput::new(std::env::args());
-    Command::parse_value_of_option(&mut input, "no arguments provided")
+    Command::parse_or_else(&mut input, (), || Error::MissingOption {
+        option: "no arguments provided".to_string(),
+    })
 }
 
 #[derive(Debug)]
@@ -52,7 +54,9 @@ enum Output {
 }
 
 impl Parse for Output {
-    fn parse_from_value(value: &str) -> Result<Self, Error> {
+    type Context = ();
+
+    fn parse_from_value(value: &str, _: ()) -> Result<Self, Error> {
         Ok(match value {
             "rgb" => Output::Rgb,
             "cmy" => Output::Cmy,
@@ -78,15 +82,17 @@ impl Parse for Output {
 struct Help;
 
 impl Parse for Help {
-    fn parse_from_value(value: &str) -> Result<Self, Error> {
-        if bool::parse_from_value(value)? {
+    type Context = ();
+
+    fn parse_from_value(value: &str, _: ()) -> Result<Self, Error> {
+        if bool::parse_from_value(value, ())? {
             Ok(Help)
         } else {
             Err(Error::NoValue)
         }
     }
 
-    fn parse<I: Input>(input: &mut I) -> Result<Self, Error> {
+    fn parse<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
         if input.eat_one_dash("h").is_some() || input.eat_two_dashes("help").is_some() {
             Ok(Help)
         } else {
@@ -109,11 +115,13 @@ struct Show {
 }
 
 impl Parse for Show {
-    fn parse_from_value(_: &str) -> Result<Self, Error> {
+    type Context = ();
+
+    fn parse_from_value(_: &str, _: ()) -> Result<Self, Error> {
         panic!("`Show` doesn't support parsing from a string")
     }
 
-    fn parse<I: Input>(input: &mut I) -> Result<Self, Error> {
+    fn parse<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
         if input.eat_no_dash("s").is_some() || input.eat_no_dash("show").is_some() {
             let mut pos1 = None;
             let mut out = None;
@@ -121,7 +129,7 @@ impl Parse for Show {
             let mut color = None;
 
             while !input.is_empty() {
-                if Help::try_parse(input)?.is_some() {
+                if Help::try_parse(input, ())?.is_some() {
                     println!("Help for `show` subcommand");
                     return Err(Error::EarlyExit);
                 }
@@ -135,7 +143,9 @@ impl Parse for Show {
                             max: 1,
                         });
                     }
-                    out = Some(Output::parse_value_of_option(input, "option `--out`")?);
+                    out = Some(Output::parse_or_else(input, (), || {
+                        Error::MissingOption { option: "option `--out`".to_string() }
+                    })?);
                     continue;
                 }
 
@@ -148,7 +158,9 @@ impl Parse for Show {
                             max: 1,
                         });
                     }
-                    size = Some(u8::parse_value_of_option(input, "option `--size`")?);
+                    size = Some(u8::parse_or_else(input, NumberCtx::default(), || {
+                        Error::MissingOption { option: "option `--size`".to_string() }
+                    })?);
                     continue;
                 }
 
@@ -161,7 +173,9 @@ impl Parse for Show {
                             max: 1,
                         });
                     }
-                    color = Some(bool::parse_value_of_option(input, "option `--color`")?);
+                    color = Some(bool::parse_or_else(input, (), || {
+                        Error::MissingOption { option: "option `--color`".to_string() }
+                    })?);
                     continue;
                 }
 
@@ -205,21 +219,23 @@ struct Command {
 }
 
 impl Parse for Command {
-    fn parse_from_value(_: &str) -> Result<Self, Error> {
+    type Context = ();
+
+    fn parse_from_value(_: &str, _: ()) -> Result<Self, Error> {
         panic!("`Command` doesn't support parsing from a string")
     }
 
-    fn parse<I: Input>(input: &mut I) -> Result<Self, Error> {
+    fn parse<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
         input.bump_argument().unwrap();
         let mut show = None;
 
         while !input.is_empty() {
-            if Help::try_parse(input)?.is_some() {
+            if Help::try_parse(input, ())?.is_some() {
                 println!("Help");
                 return Err(Error::EarlyExit);
             }
 
-            if let Some(s) = Show::try_parse(input)? {
+            if let Some(s) = Show::try_parse(input, ())? {
                 if show.is_some() {
                     return Err(Error::TooManyOptionOccurrences {
                         option: "subcommand `show`".to_string(),

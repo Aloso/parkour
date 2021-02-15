@@ -1,18 +1,40 @@
 use std::fmt;
 use std::num::{ParseFloatError, ParseIntError};
 
+/// The error type when parsing command-line arguments
 #[derive(Debug)]
 pub enum Error {
+    /// Similarly to Option::None, this indicates that the argument you tried to
+    /// parse wasn't present at the current position
     NoValue,
+
+    /// Used when an option or flag should abort argument parsing, like --help
     EarlyExit,
 
-    MissingValue { option: String },
-    Unexpected { word: String },
-    WrongNumberOfValues { min: usize, max: usize, count: usize },
-    MissingOption { option: String },
-    TooManyOptionOccurrences { option: String, max: usize },
+    /// This indicates that the argument you tried to parse wasn't present at
+    /// the current position, but was required
+    MissingValue {
+        option: String,
+    },
+    Unexpected {
+        word: String,
+    },
+    WrongNumberOfValues {
+        min: usize,
+        max: usize,
+        count: usize,
+    },
+    MissingOption {
+        option: String,
+    },
+    TooManyOptionOccurrences {
+        option: String,
+        max: usize,
+    },
 
+    /// Parsing an integer failed
     ParseIntError(ParseIntError),
+    /// Parsing a floating-point number failed
     ParseFloatError(ParseFloatError),
 }
 
@@ -35,7 +57,7 @@ impl fmt::Display for Error {
             Error::NoValue => write!(f, "no value"),
             Error::MissingValue { option } => write!(f, "missing value for {}", option),
             Error::EarlyExit => write!(f, "early exit"),
-            Error::Unexpected { word } => write!(f, "unexpected word {:?}", word),
+            Error::Unexpected { word } => write!(f, "unexpected {:?}", word),
             Error::WrongNumberOfValues { min, max, count } => {
                 if count < min {
                     write!(f, "too few values, expected at least {}, got {}", min, count)
