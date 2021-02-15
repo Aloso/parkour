@@ -1,7 +1,9 @@
 use std::time::Instant;
 
 use palex::{Input, StringInput};
-use palr::{impls::NumberCtx, Error, Parse};
+use palr::util::{Flag, MapNoValue};
+use palr::{Error, FromInput, FromInputValue, Parse};
+use Flag::*;
 
 fn main() {
     // Command {
@@ -22,7 +24,7 @@ fn main() {
             eprintln!("{:#?}", command);
         }
         Err(e) => match e {
-            Error::NoValue | Error::EarlyExit => {}
+            Error::NoValue | Error::EarlyExit => eprintln!("Took {:?}", start.elapsed()),
             e => eprintln!("{}", anyhow::Error::new(e)),
         },
     }
@@ -30,7 +32,7 @@ fn main() {
 
 fn main_() -> Result<Command, Error> {
     let mut input = StringInput::new(std::env::args());
-    Command::parse_or_else(&mut input, (), || Error::MissingOption {
+    Command::from_input(&mut input, ()).map_no_value(|| Error::MissingOption {
         option: "no arguments provided".to_string(),
     })
 }
@@ -53,10 +55,10 @@ enum Output {
     Html,
 }
 
-impl Parse for Output {
+impl FromInputValue for Output {
     type Context = ();
 
-    fn parse_from_value(value: &str, _: ()) -> Result<Self, Error> {
+    fn from_input_value(value: &str, _: ()) -> Result<Self, Error> {
         Ok(match value {
             "rgb" => Output::Rgb,
             "cmy" => Output::Cmy,
@@ -72,32 +74,16 @@ impl Parse for Output {
             "gry" => Output::Gry,
             "hex" => Output::Hex,
             "html" => Output::Html,
-            word => return Err(Error::Unexpected { word: word.to_string() }),
+            word => {
+                return Err(Error::Unexpected {
+                    word: format!(
+                        "value {:?}, expected one of: rgb cmy, cmyk, hsv, hsl, \
+                        lch, luv, lab, hunterlab, xyz, yxy, gry, hex, html",
+                        word
+                    ),
+                })
+            }
         })
-    }
-}
-
-/// `-h/--help` flag
-#[derive(Debug)]
-struct Help;
-
-impl Parse for Help {
-    type Context = ();
-
-    fn parse_from_value(value: &str, _: ()) -> Result<Self, Error> {
-        if bool::parse_from_value(value, ())? {
-            Ok(Help)
-        } else {
-            Err(Error::NoValue)
-        }
-    }
-
-    fn parse<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
-        if input.eat_one_dash("h").is_some() || input.eat_two_dashes("help").is_some() {
-            Ok(Help)
-        } else {
-            Err(Error::NoValue)
-        }
     }
 }
 
@@ -114,28 +100,24 @@ struct Show {
     color: Option<bool>,
 }
 
-impl Parse for Show {
+impl FromInput for Show {
     type Context = ();
 
-    fn parse_from_value(_: &str, _: ()) -> Result<Self, Error> {
-        panic!("`Show` doesn't support parsing from a string")
-    }
-
-    fn parse<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
-        if input.eat_no_dash("s").is_some() || input.eat_no_dash("show").is_some() {
+    fn from_input<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
+        if input.parse_command("show") || input.parse_command("s") {
             let mut pos1 = None;
             let mut out = None;
             let mut size = None;
             let mut color = None;
 
             while !input.is_empty() {
-                if Help::try_parse(input, ())?.is_some() {
+                if input.parse_long_flag("help") || input.parse_short_flag("h") {
                     println!("Help for `show` subcommand");
                     return Err(Error::EarlyExit);
                 }
 
-                if input.eat_one_dash("o").is_some()
-                    || input.eat_two_dashes("out").is_some()
+                if let Some(new_out) =
+                    input.try_parse_flag_and_value(&[Long("out"), Short("o")], ())?
                 {
                     if out.is_some() {
                         return Err(Error::TooManyOptionOccurrences {
@@ -143,29 +125,26 @@ impl Parse for Show {
                             max: 1,
                         });
                     }
-                    out = Some(Output::parse_or_else(input, (), || {
-                        Error::MissingOption { option: "option `--out`".to_string() }
-                    })?);
+                    out = Some(new_out);
                     continue;
                 }
 
-                if input.eat_one_dash("s").is_some()
-                    || input.eat_two_dashes("size").is_some()
-                {
+                if let Some(new_size) = input.try_parse_flag_and_value(
+                    &[Long("size"), Short("s")],
+                    Default::default(),
+                )? {
                     if size.is_some() {
                         return Err(Error::TooManyOptionOccurrences {
                             option: "option `--size`".to_string(),
                             max: 1,
                         });
                     }
-                    size = Some(u8::parse_or_else(input, NumberCtx::default(), || {
-                        Error::MissingOption { option: "option `--size`".to_string() }
-                    })?);
+                    size = Some(new_size);
                     continue;
                 }
 
-                if input.eat_one_dash("c").is_some()
-                    || input.eat_two_dashes("color").is_some()
+                if let Some(new_color) =
+                    input.try_parse_flag_and_value(&[Long("color"), Short("c")], ())?
                 {
                     if color.is_some() {
                         return Err(Error::TooManyOptionOccurrences {
@@ -173,16 +152,8 @@ impl Parse for Show {
                             max: 1,
                         });
                     }
-                    color = Some(bool::parse_or_else(input, (), || {
-                        Error::MissingOption { option: "option `--color`".to_string() }
-                    })?);
+                    color = Some(new_color);
                     continue;
-                }
-
-                if input.can_parse_dash_option() {
-                    return Err(Error::Unexpected {
-                        word: input.bump_argument().unwrap().to_string(),
-                    });
                 }
 
                 if let Some(value) = input.value_allows_leading_dashes() {
@@ -193,6 +164,13 @@ impl Parse for Show {
                         });
                     }
                     pos1 = Some(value.eat().to_string());
+                    continue;
+                }
+
+                if !input.is_empty() {
+                    return Err(Error::Unexpected {
+                        word: input.bump_argument().unwrap().to_string(),
+                    });
                 }
             }
 
@@ -218,24 +196,20 @@ struct Command {
     show: Option<Show>,
 }
 
-impl Parse for Command {
+impl FromInput for Command {
     type Context = ();
 
-    fn parse_from_value(_: &str, _: ()) -> Result<Self, Error> {
-        panic!("`Command` doesn't support parsing from a string")
-    }
-
-    fn parse<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
+    fn from_input<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
         input.bump_argument().unwrap();
         let mut show = None;
 
         while !input.is_empty() {
-            if Help::try_parse(input, ())?.is_some() {
+            if input.parse_long_flag("help") || input.parse_short_flag("h") {
                 println!("Help");
                 return Err(Error::EarlyExit);
             }
 
-            if let Some(s) = Show::try_parse(input, ())? {
+            if let Some(s) = input.try_parse(())? {
                 if show.is_some() {
                     return Err(Error::TooManyOptionOccurrences {
                         option: "subcommand `show`".to_string(),
@@ -246,8 +220,10 @@ impl Parse for Command {
                 continue;
             }
 
-            if let Some(value) = input.value_allows_leading_dashes() {
-                return Err(Error::Unexpected { word: value.eat().to_string() });
+            if !input.is_empty() {
+                return Err(Error::Unexpected {
+                    word: input.bump_argument().unwrap().to_string(),
+                });
             }
         }
         Ok(Command { show })

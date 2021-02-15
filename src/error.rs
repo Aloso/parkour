@@ -14,7 +14,7 @@ pub enum Error {
     /// This indicates that the argument you tried to parse wasn't present at
     /// the current position, but was required
     MissingValue {
-        option: String,
+        flag: String,
     },
     Unexpected {
         word: String,
@@ -55,7 +55,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::NoValue => write!(f, "no value"),
-            Error::MissingValue { option } => write!(f, "missing value for {}", option),
+            Error::MissingValue { flag } => write!(f, "missing value for {}", flag),
             Error::EarlyExit => write!(f, "early exit"),
             Error::Unexpected { word } => write!(f, "unexpected {:?}", word),
             Error::WrongNumberOfValues { min, max, count } => {

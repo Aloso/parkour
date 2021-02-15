@@ -1,6 +1,6 @@
 use palex::Input;
 
-use crate::{Error, Parse};
+use crate::{Error, FromInput, FromInputValue, Parse};
 
 pub struct VecCtx<C> {
     pub min_items: usize,
@@ -20,13 +20,16 @@ impl<C: Default> Default for VecCtx<C> {
     }
 }
 
-impl<T: Parse<Context = C>, C: Clone> Parse for Vec<T> {
+impl<T: FromInputValue<Context = C>, C: Clone> FromInput for Vec<T> {
     type Context = VecCtx<C>;
 
-    fn parse<I: Input>(input: &mut I, context: Self::Context) -> Result<Self, Error> {
+    fn from_input<I: Input>(
+        input: &mut I,
+        context: Self::Context,
+    ) -> Result<Self, Error> {
         if input.can_parse_value_no_whitespace() {
             let value = input.value_allows_leading_dashes().ok_or(Error::NoValue)?;
-            let result = Self::parse_from_value(value.as_str(), context)?;
+            let result = Self::from_input_value(value.as_str(), context)?;
             value.eat();
             Ok(result)
         } else {
@@ -34,7 +37,7 @@ impl<T: Parse<Context = C>, C: Clone> Parse for Vec<T> {
             let mut count = 0;
 
             for _ in 0..context.max_items {
-                match T::parse(input, context.inner.clone()) {
+                match input.parse_value(context.inner.clone()) {
                     Err(Error::NoValue) => break,
                     Err(e) => return Err(e),
                     Ok(value) => {
@@ -55,26 +58,30 @@ impl<T: Parse<Context = C>, C: Clone> Parse for Vec<T> {
             Ok(values)
         }
     }
+}
 
-    fn parse_from_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+impl<T: FromInputValue<Context = C>, C: Clone> FromInputValue for Vec<T> {
+    type Context = VecCtx<C>;
+
+    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
         if let Some(delim) = context.delimiter {
             let values: Vec<T> = value
                 .split(delim)
-                .map(|s| T::parse_from_value(s, context.inner.clone()))
+                .map(|s| T::from_input_value(s, context.inner.clone()))
                 .collect::<Result<_, _>>()?;
 
             let count = values.len();
-            if !(context.min_items..=context.max_items).contains(&count) {
-                return Err(Error::WrongNumberOfValues {
+            if (context.min_items..=context.max_items).contains(&count) {
+                Ok(values)
+            } else {
+                Err(Error::WrongNumberOfValues {
                     min: context.min_items,
                     max: context.max_items,
                     count,
-                });
+                })
             }
-
-            Ok(values)
         } else {
-            Ok(vec![T::parse_from_value(value, context.inner)?])
+            Ok(vec![T::from_input_value(value, context.inner)?])
         }
     }
 }

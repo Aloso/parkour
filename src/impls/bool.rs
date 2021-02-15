@@ -1,9 +1,9 @@
-use crate::{Error, Parse};
+use crate::{Error, FromInputValue};
 
-impl Parse for bool {
+impl FromInputValue for bool {
     type Context = ();
 
-    fn parse_from_value(value: &str, _: ()) -> Result<Self, Error> {
+    fn from_input_value(value: &str, _: ()) -> Result<Self, Error> {
         Ok(match value {
             "1" => true,
             "0" => false,
