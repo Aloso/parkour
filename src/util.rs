@@ -1,8 +1,8 @@
 use std::fmt;
+use std::fmt::Write as _;
 
-use fmt::Write;
-
-use crate::{actions::ApplyResult, Parse};
+use crate::actions::ApplyResult;
+use crate::Parse;
 
 #[derive(Debug, Clone)]
 pub enum Flag<'a> {
@@ -16,8 +16,8 @@ impl Flag<'_> {
     pub fn first_to_string(&self) -> String {
         match self {
             &Flag::Short(s) => format!("-{}", s),
-            &Flag::Long(l) => format!("-{}", l),
-            &Flag::LongShort(l, _) => format!("-{}", l),
+            &Flag::Long(l) => format!("--{}", l),
+            &Flag::LongShort(l, _) => format!("--{}", l),
             Flag::Many(v) => v[0].first_to_string(),
         }
     }
@@ -30,12 +30,7 @@ impl Flag<'_> {
                 input.parse_long_flag(l) || input.parse_short_flag(s)
             }
             Flag::Many(flags) => {
-                for flag in flags.iter() {
-                    if Self::from_input(input, flag).is_ok() {
-                        return Ok(true);
-                    }
-                }
-                false
+                flags.iter().any(|flag| Self::from_input(input, flag).is_ok())
             }
         })
     }

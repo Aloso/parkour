@@ -13,10 +13,10 @@ impl<T: Copy + PartialOrd + std::fmt::Display> NumberCtx<T> {
         if n >= self.min && n <= self.max {
             Ok(n)
         } else {
-            Err(Error::UnexpectedValue {
-                got: format!("number {}", n),
-                expected: format!("number between {} and {}", self.min, self.max),
-            })
+            Err(Error::unexpected_value(
+                format!("number {}", n),
+                format!("number between {} and {}", self.min, self.max),
+            ))
         }
     }
 }

@@ -4,3 +4,4 @@ max_width = 90
 use_small_heuristics = "Max"
 wrap_comments = true
 match_arm_leading_pipes = "Preserve"
+imports_granularity = "Module"

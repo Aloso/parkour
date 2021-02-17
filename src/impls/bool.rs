@@ -13,12 +13,7 @@ impl FromInputValue for bool {
             s if s.eq_ignore_ascii_case("no") => false,
             s if s.eq_ignore_ascii_case("true") => true,
             s if s.eq_ignore_ascii_case("false") => false,
-            _ => {
-                return Err(Error::UnexpectedValue {
-                    got: value.to_string(),
-                    expected: "y/n".to_string(),
-                })
-            }
+            _ => return Err(Error::unexpected_value(value, "y/n")),
         })
     }
 }

@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use crate::{Error, FromInputValue};
+use crate::{Error, ErrorInner, FromInputValue};
 
 #[derive(Debug)]
 pub struct ArrayCtx<C> {
@@ -34,10 +34,12 @@ impl<T: FromInputValue, const N: usize> FromInputValue for [T; N] {
             let len = values.len();
             match values.try_into() {
                 Ok(values) => Ok(values),
-                Err(_) => Err(Error::WrongNumberOfValues { expected: N, got: len }),
+                Err(_) => {
+                    Err(ErrorInner::WrongNumberOfValues { expected: N, got: len }.into())
+                }
             }
         } else {
-            Err(Error::WrongNumberOfValues { expected: N, got: 1 })
+            Err(ErrorInner::WrongNumberOfValues { expected: N, got: 1 }.into())
         }
     }
 }

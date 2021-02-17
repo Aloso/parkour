@@ -1,5 +1,5 @@
 use crate::util::Flag;
-use crate::{Error, Parse};
+use crate::{ErrorInner, Parse};
 
 use super::{Action, ApplyResult, Reset, Set, SetOnce, Unset};
 
@@ -29,10 +29,11 @@ impl<'a> Action<Flag<'a>> for SetOnce<'_, bool> {
     fn apply<P: Parse>(self, input: &mut P, context: &Flag<'a>) -> ApplyResult {
         if Flag::from_input(input, context)? {
             if *self.0 {
-                return Err(Error::TooManyArgOccurrences {
+                return Err(ErrorInner::TooManyArgOccurrences {
                     option: context.first_to_string(),
                     max: Some(1),
-                });
+                }
+                .into());
             }
             *self.0 = true;
             Ok(true)
@@ -46,10 +47,11 @@ impl<'a> Action<Flag<'a>> for Unset<'_, bool> {
     fn apply<P: Parse>(self, input: &mut P, context: &Flag<'a>) -> ApplyResult {
         if Flag::from_input(input, context)? {
             if !*self.0 {
-                return Err(Error::TooManyArgOccurrences {
+                return Err(ErrorInner::TooManyArgOccurrences {
                     option: context.first_to_string(),
                     max: None,
-                });
+                }
+                .into());
             }
             *self.0 = false;
             Ok(true)

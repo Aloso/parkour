@@ -15,7 +15,7 @@ pub trait FromInput: Sized {
     ) -> Result<Option<Self>, Error> {
         match Self::from_input(input, context) {
             Ok(value) => Ok(Some(value)),
-            Err(Error::NoValue) => Ok(None),
+            Err(e) if e.is_no_value() => Ok(None),
             Err(e) => Err(e),
         }
     }
@@ -39,11 +39,17 @@ impl<T: FromInputValue> FromInput for T {
         input: &mut P,
         context: &Self::Context,
     ) -> Result<Self, Error> {
-        Flag::from_input(input, &context.flag)?;
-        match input.parse_value(&context.inner) {
-            Ok(value) => Ok(value),
-            Err(Error::NoValue) => Err(Error::MissingValue),
-            Err(e) => Err(e),
+        if Flag::from_input(input, &context.flag)? {
+            match input.parse_value(&context.inner) {
+                Ok(value) => Ok(value),
+                Err(e) if e.is_no_value() => {
+                    Err(Error::missing_value()
+                        .with_source(Error::in_option(&context.flag)))
+                }
+                Err(e) => Err(e),
+            }
+        } else {
+            Err(Error::no_value())
         }
     }
 }

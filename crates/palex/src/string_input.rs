@@ -178,4 +178,8 @@ impl<I: Iterator<Item = String>> Input for StringInput<I> {
             }
         }
     }
+
+    fn ignore_dashes(&self) -> bool {
+        self.ignore_dashes
+    }
 }

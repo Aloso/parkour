@@ -1,4 +1,4 @@
-use crate::{Error, FromInputValue};
+use crate::{Error, ErrorInner, FromInputValue};
 
 #[derive(Debug)]
 pub struct TupleCtx<C> {
@@ -28,7 +28,7 @@ macro_rules! impl_tuple {
 
                 $(
                     let $v = $t::from_input_value(
-                        iter.next().ok_or_else(|| Error::IncompleteValue($i + 1))?,
+                        iter.next().ok_or_else(|| ErrorInner::IncompleteValue($i + 1))?,
                         &context.inner.$i,
                     )?;
                 )*

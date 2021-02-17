@@ -1,7 +1,7 @@
 use std::collections::{BTreeSet, HashSet, LinkedList, VecDeque};
 use std::hash::Hash;
 
-use crate::{Error, FromInputValue};
+use crate::{Error, ErrorInner, FromInputValue};
 
 #[derive(Debug)]
 pub struct ListCtx<C> {
@@ -67,7 +67,7 @@ impl<T: FromInputValue<Context = C>, C> FromInputValue for Vec<T> {
             if count <= context.max_items {
                 Ok(values)
             } else {
-                Err(Error::TooManyValues { max: context.max_items, count })
+                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
             }
         } else {
             Ok(vec![T::from_input_value(value, &context.inner)?])
@@ -120,7 +120,7 @@ impl<T: FromInputValue<Context = C>, C> FromInputValue for VecDeque<T> {
             if count <= context.max_items {
                 Ok(values)
             } else {
-                Err(Error::TooManyValues { max: context.max_items, count })
+                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
             }
         } else {
             let mut vec_deque = Self::with_capacity(1);
@@ -175,7 +175,7 @@ impl<T: FromInputValue<Context = C>, C> FromInputValue for LinkedList<T> {
             if count <= context.max_items {
                 Ok(values)
             } else {
-                Err(Error::TooManyValues { max: context.max_items, count })
+                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
             }
         } else {
             let mut list = Self::new();
@@ -232,7 +232,7 @@ impl<T: FromInputValue<Context = C> + Ord, C> FromInputValue for BTreeSet<T> {
             if count <= context.max_items {
                 Ok(values)
             } else {
-                Err(Error::TooManyValues { max: context.max_items, count })
+                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
             }
         } else {
             let mut vec_deque = Self::new();
@@ -289,7 +289,7 @@ impl<T: FromInputValue<Context = C> + Hash + Eq, C> FromInputValue for HashSet<T
             if count <= context.max_items {
                 Ok(values)
             } else {
-                Err(Error::TooManyValues { max: context.max_items, count })
+                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
             }
         } else {
             let mut vec_deque = Self::with_capacity(1);

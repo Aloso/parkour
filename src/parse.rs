@@ -1,6 +1,6 @@
 use palex::Input;
 
-use crate::{Error, FromInput, FromInputValue};
+use crate::{Error, ErrorInner, FromInput, FromInputValue};
 
 pub trait Parse: Input + Sized {
     #[inline]
@@ -15,7 +15,7 @@ pub trait Parse: Input + Sized {
     ) -> Result<Option<F>, Error> {
         match self.parse(context) {
             Ok(value) => Ok(Some(value)),
-            Err(Error::NoValue) => Ok(None),
+            Err(e) if e.is_no_value() => Ok(None),
             Err(e) => Err(e),
         }
     }
@@ -32,7 +32,7 @@ pub trait Parse: Input + Sized {
     ) -> Result<Option<V>, Error> {
         match self.parse_value(context) {
             Ok(value) => Ok(Some(value)),
-            Err(Error::NoValue) => Ok(None),
+            Err(e) if e.is_no_value() => Ok(None),
             Err(e) => Err(e),
         }
     }
@@ -46,9 +46,10 @@ pub trait Parse: Input + Sized {
 
     fn expect_empty(&mut self) -> Result<(), Error> {
         if !self.is_empty() {
-            return Err(Error::UnexpectedArgument {
+            return Err(ErrorInner::UnexpectedArgument {
                 arg: self.bump_argument().unwrap().to_string(),
-            });
+            }
+            .into());
         }
         Ok(())
     }
@@ -61,12 +62,12 @@ impl<I: Input> Parse for I {
         context: &V::Context,
     ) -> Result<V, Error> {
         if V::allow_leading_dashes(&context) {
-            let value = self.value_allows_leading_dashes().ok_or(Error::NoValue)?;
+            let value = self.value_allows_leading_dashes().ok_or_else(Error::no_value)?;
             let result = V::from_input_value(value.as_str(), context)?;
             value.eat();
             Ok(result)
         } else {
-            let value = self.value().ok_or(Error::NoValue)?;
+            let value = self.value().ok_or_else(Error::no_value)?;
             let result = V::from_input_value(value.as_str(), context)?;
             value.eat();
             Ok(result)

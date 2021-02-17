@@ -1,3 +1,4 @@
+use std::error::Error as _;
 use std::time::Instant;
 
 use palr::actions::{Action, SetOnce, SetPositional, SetSubcommand};
@@ -22,18 +23,25 @@ fn main() {
             eprintln!("Took {:?}", start.elapsed());
             eprintln!("{:#?}", command);
         }
-        Err(e) => match e {
-            Error::NoValue | Error::EarlyExit => eprintln!("Took {:?}", start.elapsed()),
-            e => eprintln!("{}", anyhow::Error::new(e)),
-        },
+        Err(e) if e.is_no_value() || e.is_early_exit() => {
+            eprintln!("Took {:?}", start.elapsed());
+        }
+        Err(e) => {
+            eprint!("{}", e);
+            let mut source = e.source();
+            while let Some(s) = source {
+                eprint!(": {}", s);
+                source = s.source();
+            }
+            eprintln!();
+        }
     }
 }
 
 fn main_inner() -> Result<Command, Error> {
     let mut input = StringInput::new(std::env::args());
-    Command::try_from_input(&mut input, &())?.ok_or_else(|| Error::MissingArgument {
-        arg: "no arguments provided".to_string(),
-    })
+    Command::try_from_input(&mut input, &())?
+        .ok_or_else(|| Error::missing_argument("arguments"))
 }
 
 /// Main command
@@ -51,13 +59,14 @@ impl FromInput for Command {
 
         while !input.is_empty() {
             if input.parse_long_flag("") {
+                // handle `--`
                 input.set_ignore_dashes(true);
                 continue;
             }
 
             if input.parse_long_flag("help") || input.parse_short_flag("h") {
                 println!("Help");
-                return Err(Error::EarlyExit);
+                return Err(Error::early_exit());
             }
 
             if SetSubcommand(&mut show).apply(input, &())? {
@@ -95,13 +104,14 @@ impl FromInput for Show {
 
             while !input.is_empty() {
                 if input.parse_long_flag("") {
+                    // handle `--`
                     input.set_ignore_dashes(true);
                     continue;
                 }
 
                 if input.parse_long_flag("help") || input.parse_short_flag("h") {
                     println!("Help for `show` subcommand");
-                    return Err(Error::EarlyExit);
+                    return Err(Error::early_exit());
                 }
 
                 if SetOnce(&mut out).apply(input, &Flag::LongShort("out", "o").into())? {
@@ -130,17 +140,13 @@ impl FromInput for Show {
             }
 
             Ok(Show {
-                pos1: pos1.ok_or_else(|| Error::MissingArgument {
-                    arg: "positional argument".into(),
-                })?,
-                out: out.ok_or_else(|| Error::MissingArgument {
-                    arg: "option `--out`".into(),
-                })?,
+                pos1: pos1.ok_or_else(|| Error::missing_argument("pos1"))?,
+                out: out.ok_or_else(|| Error::missing_argument("--out"))?,
                 size: size.unwrap_or(4),
                 color,
             })
         } else {
-            Err(Error::NoValue)
+            Err(Error::no_value())
         }
     }
 }
@@ -152,44 +158,21 @@ enum Output {
     Cmyk,
     Hsv,
     Hsl,
-    Lch,
-    Luv,
-    Lab,
-    Hunterlab,
-    Xyz,
-    Yxy,
-    Gry,
-    Hex,
-    Html,
+    CieLab,
 }
 
 impl FromInputValue for Output {
     type Context = ();
 
     fn from_input_value(value: &str, _: &()) -> Result<Self, Error> {
-        Ok(match value {
-            "rgb" => Output::Rgb,
-            "cmy" => Output::Cmy,
-            "cmyk" => Output::Cmyk,
-            "hsv" => Output::Hsv,
-            "hsl" => Output::Hsl,
-            "lch" => Output::Lch,
-            "luv" => Output::Luv,
-            "lab" => Output::Lab,
-            "hunterlab" => Output::Hunterlab,
-            "xyz" => Output::Xyz,
-            "yxy" => Output::Yxy,
-            "gry" => Output::Gry,
-            "hex" => Output::Hex,
-            "html" => Output::Html,
-            word => {
-                return Err(Error::UnexpectedValue {
-                    got: word.to_string(),
-                    expected: "rgb cmy, cmyk, hsv, hsl, lch, luv, \
-                              lab, hunterlab, xyz, yxy, gry, hex or html"
-                        .to_string(),
-                })
-            }
-        })
+        match value {
+            "rgb" => Ok(Output::Rgb),
+            "cmy" => Ok(Output::Cmy),
+            "cmyk" => Ok(Output::Cmyk),
+            "hsv" => Ok(Output::Hsv),
+            "hsl" => Ok(Output::Hsl),
+            "cielab" => Ok(Output::CieLab),
+            v => Err(Error::unexpected_value(v, "rgb, cmy, cmyk, hsv, hsl or cielab")),
+        }
     }
 }
