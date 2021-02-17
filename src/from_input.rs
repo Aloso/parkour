@@ -1,3 +1,4 @@
+use crate::util::{Flag, OptionCtx};
 use crate::{Error, Parse};
 
 pub trait FromInput: Sized {
@@ -27,5 +28,22 @@ pub trait FromInputValue: Sized {
 
     fn allow_leading_dashes(_context: &Self::Context) -> bool {
         false
+    }
+}
+
+
+impl<T: FromInputValue> FromInput for T {
+    type Context = OptionCtx<'static, T::Context>;
+
+    fn from_input<P: Parse>(
+        input: &mut P,
+        context: &Self::Context,
+    ) -> Result<Self, Error> {
+        Flag::from_input(input, &context.flag)?;
+        match input.parse_value(&context.inner) {
+            Ok(value) => Ok(value),
+            Err(Error::NoValue) => Err(Error::MissingValue),
+            Err(e) => Err(e),
+        }
     }
 }

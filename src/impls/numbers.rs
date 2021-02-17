@@ -13,11 +13,9 @@ impl<T: Copy + PartialOrd + std::fmt::Display> NumberCtx<T> {
         if n >= self.min && n <= self.max {
             Ok(n)
         } else {
-            Err(Error::Unexpected {
-                word: format!(
-                    "number {}, expected number in range [{}, {}]",
-                    n, self.min, self.max
-                ),
+            Err(Error::UnexpectedValue {
+                got: format!("number {}", n),
+                expected: format!("number between {} and {}", self.min, self.max),
             })
         }
     }

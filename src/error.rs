@@ -19,8 +19,9 @@ pub enum Error {
     /// Used when an option or flag should abort argument parsing, like --help
     EarlyExit,
 
-    Unexpected {
-        word: String,
+    UnexpectedValue {
+        got: String,
+        expected: String,
     },
     TooManyValues {
         max: usize,
@@ -30,12 +31,15 @@ pub enum Error {
         expected: usize,
         got: usize,
     },
-    MissingOption {
-        option: String,
+    MissingArgument {
+        arg: String,
     },
-    TooManyOptionOccurrences {
+    UnexpectedArgument {
+        arg: String,
+    },
+    TooManyArgOccurrences {
         option: String,
-        max: usize,
+        max: Option<u32>,
     },
 
     /// Parsing an integer failed
@@ -66,22 +70,36 @@ impl fmt::Display for Error {
                 write!(f, "missing part {} of value", part)
             }
             Error::EarlyExit => write!(f, "early exit"),
-            Error::Unexpected { word } => write!(f, "unexpected {:?}", word),
+            Error::UnexpectedValue { expected, got } => {
+                write!(
+                    f,
+                    "unexpected value `{}`, expected {}",
+                    got.escape_debug(),
+                    expected.escape_debug()
+                )
+            }
+            Error::UnexpectedArgument { arg } => {
+                write!(f, "unexpected argument `{}`", arg.escape_debug())
+            }
             Error::TooManyValues { max, count } => {
                 write!(f, "too many values, expected at most {}, got {}", max, count)
             }
             Error::WrongNumberOfValues { expected, got } => {
                 write!(f, "wrong number of values, expected {}, got {}", expected, got)
             }
-            Error::MissingOption { option } => {
+            Error::MissingArgument { arg: option } => {
                 write!(f, "required {} was not provided", option)
             }
-            Error::TooManyOptionOccurrences { option, max } => {
-                write!(
-                    f,
-                    "{} was used too often, it can be used at most {} times",
-                    option, max
-                )
+            Error::TooManyArgOccurrences { option, max } => {
+                if let Some(max) = max {
+                    write!(
+                        f,
+                        "{} was used too often, it can be used at most {} times",
+                        option, max
+                    )
+                } else {
+                    write!(f, "{} was used too often", option)
+                }
             }
 
             Error::ParseIntError(e) => write!(f, "{}", e),

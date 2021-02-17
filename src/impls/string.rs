@@ -28,12 +28,11 @@ impl FromInputValue for String {
 
     fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
         if value.len() < context.min_length || value.len() > context.max_length {
-            Err(Error::Unexpected {
-                word: format!(
-                    "string with length {}, expected length in range [{}, {}]",
-                    value.len(),
-                    context.min_length,
-                    context.max_length
+            Err(Error::UnexpectedValue {
+                got: format!("string with length {}", value.len()),
+                expected: format!(
+                    "length between {} and {}",
+                    context.min_length, context.max_length,
                 ),
             })
         } else {

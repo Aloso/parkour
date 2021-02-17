@@ -1,9 +1,8 @@
 use std::time::Instant;
 
-use palr::actions::{Action, Flag, SetOnce, SetPositional, SetSubcommand};
-use palr::util::MapNoValue;
-use palr::StringInput;
-use palr::{Error, FromInput, FromInputValue, Parse};
+use palr::actions::{Action, SetOnce, SetPositional, SetSubcommand};
+use palr::util::Flag;
+use palr::{Error, FromInput, FromInputValue, Parse, StringInput};
 
 fn main() {
     // Command {
@@ -18,7 +17,7 @@ fn main() {
 
     let start = Instant::now();
 
-    match main_() {
+    match main_inner() {
         Ok(command) => {
             eprintln!("Took {:?}", start.elapsed());
             eprintln!("{:#?}", command);
@@ -30,60 +29,44 @@ fn main() {
     }
 }
 
-fn main_() -> Result<Command, Error> {
+fn main_inner() -> Result<Command, Error> {
     let mut input = StringInput::new(std::env::args());
-    Command::from_input(&mut input, &()).map_no_value(|| Error::MissingOption {
-        option: "no arguments provided".to_string(),
+    Command::try_from_input(&mut input, &())?.ok_or_else(|| Error::MissingArgument {
+        arg: "no arguments provided".to_string(),
     })
 }
 
+/// Main command
 #[derive(Debug)]
-enum Output {
-    Rgb,
-    Cmy,
-    Cmyk,
-    Hsv,
-    Hsl,
-    Lch,
-    Luv,
-    Lab,
-    Hunterlab,
-    Xyz,
-    Yxy,
-    Gry,
-    Hex,
-    Html,
+struct Command {
+    show: Option<Show>,
 }
 
-impl FromInputValue for Output {
+impl FromInput for Command {
     type Context = ();
 
-    fn from_input_value(value: &str, _: &()) -> Result<Self, Error> {
-        Ok(match value {
-            "rgb" => Output::Rgb,
-            "cmy" => Output::Cmy,
-            "cmyk" => Output::Cmyk,
-            "hsv" => Output::Hsv,
-            "hsl" => Output::Hsl,
-            "lch" => Output::Lch,
-            "luv" => Output::Luv,
-            "lab" => Output::Lab,
-            "hunterlab" => Output::Hunterlab,
-            "xyz" => Output::Xyz,
-            "yxy" => Output::Yxy,
-            "gry" => Output::Gry,
-            "hex" => Output::Hex,
-            "html" => Output::Html,
-            word => {
-                return Err(Error::Unexpected {
-                    word: format!(
-                        "value {:?}, expected one of: rgb cmy, cmyk, hsv, hsl, \
-                        lch, luv, lab, hunterlab, xyz, yxy, gry, hex, html",
-                        word
-                    ),
-                })
+    fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, Error> {
+        input.bump_argument().unwrap();
+        let mut show = None;
+
+        while !input.is_empty() {
+            if input.parse_long_flag("") {
+                input.set_ignore_dashes(true);
+                continue;
             }
-        })
+
+            if input.parse_long_flag("help") || input.parse_short_flag("h") {
+                println!("Help");
+                return Err(Error::EarlyExit);
+            }
+
+            if SetSubcommand(&mut show).apply(input, &())? {
+                continue;
+            }
+
+            input.expect_empty()?;
+        }
+        Ok(Command { show })
     }
 }
 
@@ -147,11 +130,11 @@ impl FromInput for Show {
             }
 
             Ok(Show {
-                pos1: pos1.ok_or_else(|| Error::MissingOption {
-                    option: "positional argument".into(),
+                pos1: pos1.ok_or_else(|| Error::MissingArgument {
+                    arg: "positional argument".into(),
                 })?,
-                out: out.ok_or_else(|| Error::MissingOption {
-                    option: "option `--out`".into(),
+                out: out.ok_or_else(|| Error::MissingArgument {
+                    arg: "option `--out`".into(),
                 })?,
                 size: size.unwrap_or(4),
                 color,
@@ -162,36 +145,51 @@ impl FromInput for Show {
     }
 }
 
-/// Main command
 #[derive(Debug)]
-struct Command {
-    show: Option<Show>,
+enum Output {
+    Rgb,
+    Cmy,
+    Cmyk,
+    Hsv,
+    Hsl,
+    Lch,
+    Luv,
+    Lab,
+    Hunterlab,
+    Xyz,
+    Yxy,
+    Gry,
+    Hex,
+    Html,
 }
 
-impl FromInput for Command {
+impl FromInputValue for Output {
     type Context = ();
 
-    fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, Error> {
-        input.bump_argument().unwrap();
-        let mut show = None;
-
-        while !input.is_empty() {
-            if input.parse_long_flag("") {
-                input.set_ignore_dashes(true);
-                continue;
+    fn from_input_value(value: &str, _: &()) -> Result<Self, Error> {
+        Ok(match value {
+            "rgb" => Output::Rgb,
+            "cmy" => Output::Cmy,
+            "cmyk" => Output::Cmyk,
+            "hsv" => Output::Hsv,
+            "hsl" => Output::Hsl,
+            "lch" => Output::Lch,
+            "luv" => Output::Luv,
+            "lab" => Output::Lab,
+            "hunterlab" => Output::Hunterlab,
+            "xyz" => Output::Xyz,
+            "yxy" => Output::Yxy,
+            "gry" => Output::Gry,
+            "hex" => Output::Hex,
+            "html" => Output::Html,
+            word => {
+                return Err(Error::UnexpectedValue {
+                    got: word.to_string(),
+                    expected: "rgb cmy, cmyk, hsv, hsl, lch, luv, \
+                              lab, hunterlab, xyz, yxy, gry, hex or html"
+                        .to_string(),
+                })
             }
-
-            if input.parse_long_flag("help") || input.parse_short_flag("h") {
-                println!("Help");
-                return Err(Error::EarlyExit);
-            }
-
-            if SetSubcommand(&mut show).apply(input, &())? {
-                continue;
-            }
-
-            input.expect_empty()?;
-        }
-        Ok(Command { show })
+        })
     }
 }

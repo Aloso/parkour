@@ -46,8 +46,8 @@ pub trait Parse: Input + Sized {
 
     fn expect_empty(&mut self) -> Result<(), Error> {
         if !self.is_empty() {
-            return Err(Error::Unexpected {
-                word: self.bump_argument().unwrap().to_string(),
+            return Err(Error::UnexpectedArgument {
+                arg: self.bump_argument().unwrap().to_string(),
             });
         }
         Ok(())
