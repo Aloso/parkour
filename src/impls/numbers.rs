@@ -2,10 +2,13 @@ use std::num::*;
 
 use crate::{Error, FromInputValue};
 
+/// The parsing context for numeric types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NumberCtx<T> {
-    min: T,
-    max: T,
+    /// The smallest accepted number
+    pub min: T,
+    /// The largest accepted number
+    pub max: T,
 }
 
 impl<T: Copy + PartialOrd + std::fmt::Display> NumberCtx<T> {

@@ -3,7 +3,10 @@ use std::num::{ParseFloatError, ParseIntError};
 
 use crate::util::Flag;
 
-/// The error type when parsing command-line arguments
+/// The error type when parsing command-line arguments. You can create an
+/// `Error` by creating an `ErrorInner` and converting it with `.into()`.
+///
+/// This error type supports an error source for attaching context to the error.
 #[derive(Debug)]
 pub struct Error {
     inner: ErrorInner,
@@ -11,6 +14,23 @@ pub struct Error {
 }
 
 impl Error {
+    /// Attach context to the error.
+    ///
+    /// ### Usage
+    ///
+    /// ```
+    /// use parkour::{Error, util::Flag};
+    ///
+    /// Error::missing_value()
+    ///     .with_source(Error::in_subcommand("test"))
+    /// # ;
+    /// ```
+    ///
+    /// This could produce the following output:
+    /// ```text
+    /// missing value
+    ///     source: in subcommand `test`
+    /// ```
     pub fn with_source(
         self,
         source: impl std::error::Error + Sync + Send + 'static,
@@ -62,9 +82,14 @@ impl Error {
         ErrorInner::MissingArgument { arg: arg.to_string() }.into()
     }
 
-    /// Create a `InOption` error
-    pub fn in_option(flag: &Flag) -> Self {
-        ErrorInner::InOption(flag.first_to_string()).into()
+    /// Create a `InArgument` error
+    pub fn in_argument(flag: &Flag) -> Self {
+        ErrorInner::InArgument(flag.first_to_string()).into()
+    }
+
+    /// Create a `InSubcommand` error
+    pub fn in_subcommand(cmd: impl ToString) -> Self {
+        ErrorInner::InSubcommand(cmd.to_string()).into()
     }
 }
 
@@ -78,48 +103,76 @@ impl From<ErrorInner> for Error {
 /// The error type when parsing command-line arguments
 #[derive(Debug, PartialEq)]
 pub enum ErrorInner {
-    /// Similarly to Option::None, this indicates that the argument you tried to
-    /// parse wasn't present at the current position
+    /// The argument you tried to parse wasn't present at the current position.
+    /// Has a similar purpose as `Option::None`
     NoValue,
 
-    /// This indicates that the argument you tried to parse wasn't present at
-    /// the current position, but was required
+    /// The argument you tried to parse wasn't present at the current position,
+    /// but was required
     MissingValue,
 
-    /// This indicates that the argument you tried to parse was only partly
-    /// present
+    /// The argument you tried to parse was only partly present
     IncompleteValue(usize),
 
     /// Used when an option or flag should abort argument parsing, like --help
     EarlyExit,
 
-    InOption(String),
+    /// Indicates that the error originated in the specified argument. This
+    /// should be used as the source for another error
+    InArgument(String),
 
+    /// Indicates that the error originated in the specified subcommand. This
+    /// should be used as the source for another error
+    InSubcommand(String),
+
+    /// The parsed value doesn't meet our expectations
     UnexpectedValue {
+        /// The value we tried to parse
         got: String,
+        /// The expectation that was violated. For example, this string can
+        /// contain a list of accepted values.
         expected: String,
     },
+
+    /// The parsed list contains more items than allowed
     TooManyValues {
+        /// The maximum number of items
         max: usize,
+        /// The number of items that was parsed
         count: usize,
     },
+
+    /// The parsed array has the wrong length
     WrongNumberOfValues {
+        /// The length of the array
         expected: usize,
+        /// The number of items that was parsed
         got: usize,
     },
+
+    /// A required argument was not provided
     MissingArgument {
+        /// The name of the argument that is missing
         arg: String,
     },
+
+    /// An unknown argument was provided
     UnexpectedArgument {
+        /// The (full) argument that wasn't expected
         arg: String,
     },
+
+    /// An argument was provided more often than allowed
     TooManyArgOccurrences {
+        /// The name of the argument that was provided too many times
         option: String,
+        /// The maximum number of times the argument may be provided
         max: Option<u32>,
     },
 
     /// Parsing an integer failed
     ParseIntError(ParseIntError),
+
     /// Parsing a floating-point number failed
     ParseFloatError(ParseFloatError),
 }
@@ -153,7 +206,10 @@ impl fmt::Display for Error {
                 write!(f, "missing part {} of value", part)
             }
             ErrorInner::EarlyExit => write!(f, "early exit"),
-            ErrorInner::InOption(opt) => write!(f, "in `{}`", opt.escape_debug()),
+            ErrorInner::InArgument(opt) => write!(f, "in `{}`", opt.escape_debug()),
+            ErrorInner::InSubcommand(cmd) => {
+                write!(f, "in subcommand {}", cmd.escape_debug())
+            }
             ErrorInner::UnexpectedValue { expected, got } => {
                 write!(
                     f,

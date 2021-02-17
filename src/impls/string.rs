@@ -1,8 +1,12 @@
 use crate::{Error, FromInputValue};
 
+/// The parsing context for strings
 pub struct StringCtx {
+    /// The minimum length of the string in bytes
     pub min_length: usize,
+    /// The maximum length of the string in bytes
     pub max_length: usize,
+    /// Whether or not the string may start with dashes
     pub allow_leading_dashes: bool,
 }
 
@@ -13,10 +17,13 @@ impl Default for StringCtx {
 }
 
 impl StringCtx {
+    /// Create a new `StringCtx` that doesn't accept strings starting with
+    /// leading dashes
     pub fn new(min_length: usize, max_length: usize) -> Self {
         StringCtx { min_length, max_length, allow_leading_dashes: false }
     }
 
+    /// Sets `allow_leading_dashes` to true
     pub fn allow_leading_dashes(mut self) -> Self {
         self.allow_leading_dashes = true;
         self

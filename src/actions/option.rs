@@ -13,7 +13,7 @@ impl<V: FromInputValue> Action<OptionCtx<'static, V::Context>> for Set<'_, Optio
     ) -> ApplyResult {
         match input
             .try_parse(context)
-            .map_err(|e| e.with_source(Error::in_option(&context.flag)))?
+            .map_err(|e| e.with_source(Error::in_argument(&context.flag)))?
         {
             Some(s) => {
                 *self.0 = Some(s);
@@ -34,7 +34,7 @@ impl<V: FromInputValue> Action<OptionCtx<'static, V::Context>>
     ) -> ApplyResult {
         match input
             .try_parse(context)
-            .map_err(|e| e.with_source(Error::in_option(&context.flag)))?
+            .map_err(|e| e.with_source(Error::in_argument(&context.flag)))?
         {
             Some(s) => {
                 if self.0.is_some() {

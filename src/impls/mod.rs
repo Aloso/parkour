@@ -1,3 +1,6 @@
+//! This module contains the implementations of the [`crate::FromInput`] and
+//! [`crate::FromInputValue`] traits.
+
 mod array;
 mod bool;
 mod list;

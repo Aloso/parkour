@@ -3,22 +3,23 @@ use std::time::Instant;
 
 use parkour::actions::{Action, SetOnce, SetPositional, SetSubcommand};
 use parkour::util::Flag;
-use parkour::{Error, FromInput, FromInputValue, Parse, StringInput};
+use parkour::{Error, FromInput, FromInputValue, Parse};
 
 fn main() {
     // Command {
     //      Argument(-h/--help) { Help } -> throws Error::EarlyExit,
+    //      Argument(-c/--color) { bool }
     //      Subcommand(s/show) {
-    //          PositionalArg { String }
+    //          PositionalArg(pos1) { String } [required]
     //          Argument(-h/--help) { Help } -> throws Error::EarlyExit,
-    //          Argument(-o/--out) { Output }
+    //          Argument(-o/--out) { Output } [required]
     //          Argument(-s/--size) { u8 } [default: 4]
     //      }
     // }
 
     let start = Instant::now();
 
-    match main_inner() {
+    match Command::from_input(&mut parkour::parser(), &()) {
         Ok(command) => {
             eprintln!("Took {:?}", start.elapsed());
             eprintln!("{:#?}", command);
@@ -36,12 +37,6 @@ fn main() {
             eprintln!();
         }
     }
-}
-
-fn main_inner() -> Result<Command, Error> {
-    let mut input = StringInput::new(std::env::args());
-    Command::try_from_input(&mut input, &())?
-        .ok_or_else(|| Error::missing_argument("arguments"))
 }
 
 /// Main command
@@ -94,7 +89,7 @@ struct Show {
     /// first positional argument
     pos1: String,
     /// `-o/--out` option
-    out: Output,
+    out: ColorSpace,
     /// `-s/--size` option, default: 4
     size: u8,
 }
@@ -151,7 +146,7 @@ impl FromInput for Show {
 }
 
 #[derive(Debug)]
-enum Output {
+enum ColorSpace {
     Rgb,
     Cmy,
     Cmyk,
@@ -160,17 +155,17 @@ enum Output {
     CieLab,
 }
 
-impl FromInputValue for Output {
+impl FromInputValue for ColorSpace {
     type Context = ();
 
     fn from_input_value(value: &str, _: &()) -> Result<Self, Error> {
         match value {
-            "rgb" => Ok(Output::Rgb),
-            "cmy" => Ok(Output::Cmy),
-            "cmyk" => Ok(Output::Cmyk),
-            "hsv" => Ok(Output::Hsv),
-            "hsl" => Ok(Output::Hsl),
-            "cielab" => Ok(Output::CieLab),
+            "rgb" => Ok(ColorSpace::Rgb),
+            "cmy" => Ok(ColorSpace::Cmy),
+            "cmyk" => Ok(ColorSpace::Cmyk),
+            "hsv" => Ok(ColorSpace::Hsv),
+            "hsl" => Ok(ColorSpace::Hsl),
+            "cielab" => Ok(ColorSpace::CieLab),
             v => Err(Error::unexpected_value(v, "rgb, cmy, cmyk, hsv, hsl or cielab")),
         }
     }

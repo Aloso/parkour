@@ -4,15 +4,29 @@ use std::fmt::Write as _;
 use crate::actions::ApplyResult;
 use crate::Parse;
 
+/// The parsing context for a flag.
+///
+/// A flag is either short (i.e. it starts with a single dash) or long (i.e. it
+/// starts with two dashes). Note that the dashes should **not** be written in
+/// the string, i.e. use `Flag::Long("version")`, not `Flag::Long("--version")`.
+///
+/// Arguments can often be specified with a long and a short flag (e.g. `--help`
+/// and `-h`); Use `Flag::LongShort("help", "h")` in this case. If an argument
+/// has more than 2 flags, use `Flag::Many(vec![...])`.
 #[derive(Debug, Clone)]
 pub enum Flag<'a> {
+    /// A short flag, like `-h`
     Short(&'a str),
+    /// A long flag, like `--help`
     Long(&'a str),
+    /// A flag with a long and a short alias, e.g. `-h,--help`.
     LongShort(&'a str, &'a str),
+    /// A flag with multiple aliases
     Many(Box<[Flag<'a>]>),
 }
 
 impl Flag<'_> {
+    /// Returns the first alias of the flag as a [String].
     pub fn first_to_string(&self) -> String {
         match self {
             &Flag::Short(s) => format!("-{}", s),
@@ -22,6 +36,7 @@ impl Flag<'_> {
         }
     }
 
+    /// Parses a flag from a [`Parse`] instance.
     pub fn from_input<'a, P: Parse>(input: &mut P, context: &Flag<'a>) -> ApplyResult {
         Ok(match context {
             Flag::Short(f) => input.parse_short_flag(f),

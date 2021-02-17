@@ -1,8 +1,29 @@
+//! Actions are used to store the parsed command-line arguments in local
+//! variables. Actions can make sure that arguments are specified at most once.
+//!
+//! The structs [SetOnce], [Set], [Unset], [Reset], [Inc], [Dec], [Append],
+//! [SetPositional] and [SetSubcommand] implement the [Action] trait. Each
+//! struct has a different strategy of updating the local variable, and is
+//! implemented for different types. For example, [Inc] and [Dec] are only
+//! implemented for integer types, whereas [Set] is implemented for all types.
+//!
+//! ## Usage
+//!
+//! Make sure the [Action] trait is in scope, e.g.
+//! ```rust
+//! use parkour::actions::Action;
+//! // or
+//! use parkour::actions::Action as _;
+//! // or
+//! use parkour::prelude::*;
+//! ```
+
 use crate::{Error, FromInput, FromInputValue, Parse};
 
 mod bool;
 mod option;
 
+/// The result of [`Action::apply`]
 pub type ApplyResult = Result<bool, Error>;
 
 pub trait Action<C> {
