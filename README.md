@@ -1,10 +1,10 @@
-# palr
+# parkour
 
-A fast, small, command-line arguments parser.
+A fast, extensible, command-line arguments parser.
 
 ## Usage
 
-Palr isn't published on crates.io yet, but it will be soon!
+Parkour isn't published on crates.io yet, but it will be soon!
 
 ## License
 

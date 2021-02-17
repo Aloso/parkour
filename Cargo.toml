@@ -2,10 +2,10 @@
 members = ["crates/*"]
 
 [package]
-name = "palr"
+name = "parkour"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
-description = "A fast, small, command-line arguments parser"
+description = "A fast, extensible command-line arguments parser"
 edition = "2018"
 readme = "README.md"
 license = "MIT OR Apache-2.0"

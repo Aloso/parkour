@@ -1,9 +1,9 @@
 use std::error::Error as _;
 use std::time::Instant;
 
-use palr::actions::{Action, SetOnce, SetPositional, SetSubcommand};
-use palr::util::Flag;
-use palr::{Error, FromInput, FromInputValue, Parse, StringInput};
+use parkour::actions::{Action, SetOnce, SetPositional, SetSubcommand};
+use parkour::util::Flag;
+use parkour::{Error, FromInput, FromInputValue, Parse, StringInput};
 
 fn main() {
     // Command {
