@@ -8,14 +8,14 @@ use crate::{Input, TokenKind};
 /// Getting the current token and token kind is very cheap. Bumping the token is
 /// a bit more expensive, since it involves more complicated logic and might
 /// re-allocate.
-#[derive(Debug)]
-pub struct StringInput<I: Iterator<Item = String> + std::fmt::Debug = std::env::Args> {
+pub struct StringInput<I: Iterator<Item = String> = std::env::Args> {
     current: Option<(usize, usize, TokenKind)>,
     iter: I,
     buf: String,
+    ignore_dashes: bool,
 }
 
-impl<I: Iterator<Item = String> + std::fmt::Debug> StringInput<I> {
+impl<I: Iterator<Item = String>> StringInput<I> {
     /// Creates a new instance of this input.
     ///
     /// ### Example:
@@ -29,15 +29,26 @@ impl<I: Iterator<Item = String> + std::fmt::Debug> StringInput<I> {
     /// just the path to the executable.
     pub fn new(mut iter: I) -> Self {
         match iter.next() {
-            Some(buf) => {
-                Self { current: Some(Self::trim_leading_dashes(&buf, 0)), iter, buf }
+            Some(buf) => Self {
+                current: Some(Self::trim_leading_dashes(false, &buf, 0)),
+                iter,
+                buf,
+                ignore_dashes: false,
+            },
+            None => {
+                Self { current: None, iter, buf: String::new(), ignore_dashes: false }
             }
-            None => Self { current: None, iter, buf: String::new() },
         }
     }
 
-    fn trim_leading_dashes(string: &str, current: usize) -> (usize, usize, TokenKind) {
-        if string.starts_with("--") {
+    fn trim_leading_dashes(
+        ignore: bool,
+        string: &str,
+        current: usize,
+    ) -> (usize, usize, TokenKind) {
+        if ignore {
+            (current, current, TokenKind::NoDash)
+        } else if string.starts_with("--") {
             (current + 2, current, TokenKind::TwoDashes)
         } else if string.starts_with('-') {
             (current + 1, current, TokenKind::OneDash)
@@ -73,7 +84,7 @@ impl<I: Iterator<Item = String> + std::fmt::Debug> StringInput<I> {
 }
 
 
-impl<I: Iterator<Item = String> + std::fmt::Debug> Input for StringInput<I> {
+impl<I: Iterator<Item = String>> Input for StringInput<I> {
     fn current(&self) -> Option<(&str, TokenKind)> {
         self.current.map(|(i, _, kind)| (&self.buf[i..], kind))
     }
@@ -96,7 +107,11 @@ impl<I: Iterator<Item = String> + std::fmt::Debug> Input for StringInput<I> {
                 match self.iter.next() {
                     Some(s) => {
                         self.buf.push_str(&s);
-                        self.current = Some(Self::trim_leading_dashes(&s, *current));
+                        self.current = Some(Self::trim_leading_dashes(
+                            self.ignore_dashes,
+                            &s,
+                            *current,
+                        ));
                     }
                     None => self.current = None,
                 }
@@ -126,7 +141,8 @@ impl<I: Iterator<Item = String> + std::fmt::Debug> Input for StringInput<I> {
                 match self.iter.next() {
                     Some(s) => {
                         self.buf.push_str(&s);
-                        self.current = Some(Self::trim_leading_dashes(&s, *cwd));
+                        self.current =
+                            Some(Self::trim_leading_dashes(self.ignore_dashes, &s, *cwd));
                     }
                     None => self.current = None,
                 }
@@ -147,6 +163,19 @@ impl<I: Iterator<Item = String> + std::fmt::Debug> Input for StringInput<I> {
             Some(self.bump(len))
         } else {
             None
+        }
+    }
+
+    fn set_ignore_dashes(&mut self, ignore: bool) {
+        self.ignore_dashes = ignore;
+        if let Some((current, cwd, kind)) = &mut self.current {
+            if ignore {
+                *current = *cwd;
+                *kind = TokenKind::NoDash;
+            } else {
+                self.current =
+                    Some(Self::trim_leading_dashes(ignore, &self.buf[*current..], *cwd));
+            }
         }
     }
 }

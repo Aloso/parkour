@@ -141,3 +141,24 @@ fn test_value_allows_leading_dashes() {
     assert_eq!(input.eat_value_allows_leading_dashes("--o"), Some("--o"));
     assert!(input.is_empty());
 }
+
+#[test]
+fn test_modes() {
+    {
+        let mut input = StringInput::new(input("-a --b c"));
+        assert_eq!(input.eat_no_dash("-a"), None);
+        assert_eq!(input.eat_one_dash("a"), Some("a"));
+        assert_eq!(input.eat_no_dash("--b"), None);
+        assert_eq!(input.eat_two_dashes("b"), Some("b"));
+        assert_eq!(input.eat_no_dash("c"), Some("c"));
+    }
+    {
+        let mut input = StringInput::new(input("-a --b c"));
+        input.set_ignore_dashes(true);
+        assert_eq!(input.eat_one_dash("a"), None);
+        assert_eq!(input.eat_no_dash("-a"), Some("-a"));
+        assert_eq!(input.eat_two_dashes("b"), None);
+        assert_eq!(input.eat_no_dash("--b"), Some("--b"));
+        assert_eq!(input.eat_no_dash("c"), Some("c"));
+    }
+}

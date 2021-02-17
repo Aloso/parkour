@@ -1,3 +1,5 @@
+use std::num::*;
+
 use crate::{Error, FromInputValue};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,8 +35,8 @@ macro_rules! default_impl {
     };
 }
 
-macro_rules! number_impl {
-    ($( $t:ident ),*) => {
+macro_rules! from_input_value {
+    (signed -> $( $t:ident ),*) => {
         $(
             impl FromInputValue for $t {
                 type Context = NumberCtx<$t>;
@@ -45,7 +47,53 @@ macro_rules! number_impl {
 
                 #[allow(unused_comparisons)]
                 fn allow_leading_dashes(context: &Self::Context) -> bool {
-                    context.min < 0
+                    context.min.is_negative()
+                }
+            }
+        )*
+    };
+    (signed_nonzero -> $( $t:ident ),*) => {
+        $(
+            impl FromInputValue for $t {
+                type Context = NumberCtx<$t>;
+
+                fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+                    context.must_include(value.parse()?)
+                }
+
+                #[allow(unused_comparisons)]
+                fn allow_leading_dashes(context: &Self::Context) -> bool {
+                    context.min.get().is_negative()
+                }
+            }
+        )*
+    };
+    (unsigned -> $( $t:ident ),*) => {
+        $(
+            impl FromInputValue for $t {
+                type Context = NumberCtx<$t>;
+
+                fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+                    context.must_include(value.parse()?)
+                }
+
+                #[allow(unused_comparisons)]
+                fn allow_leading_dashes(_: &Self::Context) -> bool { false }
+            }
+        )*
+    };
+    (float -> $( $t:ident ),*) => {
+        $(
+            impl FromInputValue for $t {
+                type Context = NumberCtx<$t>;
+
+                fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+                    context.must_include(value.parse()?)
+                }
+
+                #[allow(unused_comparisons)]
+                fn allow_leading_dashes(context: &Self::Context) -> bool {
+                    context.min.is_sign_negative()
                 }
             }
         )*
@@ -53,28 +101,13 @@ macro_rules! number_impl {
 }
 
 default_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
-number_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-impl FromInputValue for f32 {
-    type Context = NumberCtx<f32>;
-
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
-        context.must_include(value.parse()?)
-    }
-
-    fn allow_leading_dashes(context: &Self::Context) -> bool {
-        context.min < 0.0
-    }
+from_input_value! { signed -> i8, i16, i32, i64, i128, isize }
+from_input_value! { signed_nonzero ->
+    NonZeroI8, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI128, NonZeroIsize
 }
-
-impl FromInputValue for f64 {
-    type Context = NumberCtx<f64>;
-
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
-        context.must_include(value.parse()?)
-    }
-
-    fn allow_leading_dashes(context: &Self::Context) -> bool {
-        context.min < 0.0
-    }
+from_input_value! { unsigned ->
+    u8, u16, u32, u64, u128, usize,
+    NonZeroU8, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU128, NonZeroUsize
 }
+from_input_value! { float -> f32, f64 }

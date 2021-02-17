@@ -19,10 +19,13 @@ pub enum Error {
     Unexpected {
         word: String,
     },
-    WrongNumberOfValues {
-        min: usize,
+    TooManyValues {
         max: usize,
         count: usize,
+    },
+    WrongNumberOfValues {
+        expected: usize,
+        got: usize,
     },
     MissingOption {
         option: String,
@@ -58,12 +61,11 @@ impl fmt::Display for Error {
             Error::MissingValue { flag } => write!(f, "missing value for {}", flag),
             Error::EarlyExit => write!(f, "early exit"),
             Error::Unexpected { word } => write!(f, "unexpected {:?}", word),
-            Error::WrongNumberOfValues { min, max, count } => {
-                if count < min {
-                    write!(f, "too few values, expected at least {}, got {}", min, count)
-                } else {
-                    write!(f, "too many values, expected at most {}, got {}", max, count)
-                }
+            Error::TooManyValues { max, count } => {
+                write!(f, "too many values, expected at most {}, got {}", max, count)
+            }
+            Error::WrongNumberOfValues { expected, got } => {
+                write!(f, "wrong number of values, expected {}, got {}", expected, got)
             }
             Error::MissingOption { option } => {
                 write!(f, "required {} was not provided", option)

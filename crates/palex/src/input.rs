@@ -8,7 +8,7 @@ use crate::TokenKind;
 /// [`TokenKind`] should be cheap.
 ///
 /// This trait is implemented for [crate::StringInput].
-pub trait Input: std::fmt::Debug {
+pub trait Input {
     /// Returns the current token as string slice and the [`TokenKind`] of the
     /// current token, or [None] if the input is empty.
     ///
@@ -47,11 +47,21 @@ pub trait Input: std::fmt::Debug {
     /// Bumps the current argument (including leading dashes) completely.
     fn bump_argument(&mut self) -> Option<&str>;
 
+    /// Sets the parsing mode. When `true`, all arguments are considered
+    /// positional, i.e. leading dashes are ignored.
+    fn set_ignore_dashes(&mut self, ignore: bool);
+
 
     /// Returns `true` if the input is empty. This means that all arguments have
     /// been fully parsed.
     fn is_empty(&self) -> bool {
         self.current().is_none()
+    }
+
+    /// Returns `true` if the input is not empty. This means that all arguments
+    /// have been fully parsed.
+    fn is_not_empty(&self) -> bool {
+        self.current().is_some()
     }
 
     /// Returns `true` if a value within the same argument is expected. Or in

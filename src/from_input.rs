@@ -1,15 +1,13 @@
-use palex::Input;
-
-use crate::Error;
+use crate::{Error, Parse};
 
 pub trait FromInput: Sized {
     type Context;
 
-    fn from_input<I: Input>(input: &mut I, context: Self::Context)
+    fn from_input<P: Parse>(input: &mut P, context: Self::Context)
         -> Result<Self, Error>;
 
-    fn try_from_input<I: Input>(
-        input: &mut I,
+    fn try_from_input<P: Parse>(
+        input: &mut P,
         context: Self::Context,
     ) -> Result<Option<Self>, Error> {
         match Self::from_input(input, context) {

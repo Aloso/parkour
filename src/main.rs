@@ -1,7 +1,7 @@
 use std::time::Instant;
 
-use palex::{Input, StringInput};
 use palr::util::{Flag, MapNoValue};
+use palr::StringInput;
 use palr::{Error, FromInput, FromInputValue, Parse};
 use Flag::*;
 
@@ -103,7 +103,7 @@ struct Show {
 impl FromInput for Show {
     type Context = ();
 
-    fn from_input<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
+    fn from_input<P: Parse>(input: &mut P, _: ()) -> Result<Self, Error> {
         if input.parse_command("show") || input.parse_command("s") {
             let mut pos1 = None;
             let mut out = None;
@@ -199,7 +199,7 @@ struct Command {
 impl FromInput for Command {
     type Context = ();
 
-    fn from_input<I: Input>(input: &mut I, _: ()) -> Result<Self, Error> {
+    fn from_input<P: Parse>(input: &mut P, _: ()) -> Result<Self, Error> {
         input.bump_argument().unwrap();
         let mut show = None;
 
