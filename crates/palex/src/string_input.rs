@@ -158,7 +158,7 @@ impl<I: Iterator<Item = String>> Input for StringInput<I> {
     }
 
     fn bump_argument(&mut self) -> Option<&str> {
-        if let Some((_, i, _)) = self.current {
+        if let Some((i, _, _)) = self.current {
             let len = self.buf.len() - i;
             Some(self.bump(len))
         } else {

@@ -47,6 +47,9 @@ fn main_inner() -> Result<Command, Error> {
 /// Main command
 #[derive(Debug)]
 struct Command {
+    /// `-c/--color` option
+    color: Option<bool>,
+    /// `s/show` subcommand
     show: Option<Show>,
 }
 
@@ -55,7 +58,9 @@ impl FromInput for Command {
 
     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, Error> {
         input.bump_argument().unwrap();
+
         let mut show = None;
+        let mut color = None;
 
         while !input.is_empty() {
             if input.parse_long_flag("") {
@@ -69,13 +74,17 @@ impl FromInput for Command {
                 return Err(Error::early_exit());
             }
 
+            if SetOnce(&mut color).apply(input, &Flag::LongShort("color", "c").into())? {
+                continue;
+            }
+
             if SetSubcommand(&mut show).apply(input, &())? {
                 continue;
             }
 
             input.expect_empty()?;
         }
-        Ok(Command { show })
+        Ok(Command { show, color })
     }
 }
 
@@ -88,8 +97,6 @@ struct Show {
     out: Output,
     /// `-s/--size` option, default: 4
     size: u8,
-    /// `-c/--color` option
-    color: Option<bool>,
 }
 
 impl FromInput for Show {
@@ -100,7 +107,6 @@ impl FromInput for Show {
             let mut pos1 = None;
             let mut out = None;
             let mut size = None;
-            let mut color = None;
 
             while !input.is_empty() {
                 if input.parse_long_flag("") {
@@ -124,12 +130,6 @@ impl FromInput for Show {
                     continue;
                 }
 
-                if SetOnce(&mut color)
-                    .apply(input, &Flag::LongShort("color", "c").into())?
-                {
-                    continue;
-                }
-
                 if pos1.is_none()
                     && SetPositional(&mut pos1).apply(input, &"pos1".into())?
                 {
@@ -143,7 +143,6 @@ impl FromInput for Show {
                 pos1: pos1.ok_or_else(|| Error::missing_argument("pos1"))?,
                 out: out.ok_or_else(|| Error::missing_argument("--out"))?,
                 size: size.unwrap_or(4),
-                color,
             })
         } else {
             Err(Error::no_value())
