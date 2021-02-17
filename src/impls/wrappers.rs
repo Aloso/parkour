@@ -8,7 +8,7 @@ use crate::{Error, FromInputValue};
 impl<T: FromInputValue> FromInputValue for Box<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -20,7 +20,7 @@ impl<T: FromInputValue> FromInputValue for Box<T> {
 impl<T: FromInputValue> FromInputValue for Rc<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -32,7 +32,7 @@ impl<T: FromInputValue> FromInputValue for Rc<T> {
 impl<T: FromInputValue> FromInputValue for Arc<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -44,7 +44,7 @@ impl<T: FromInputValue> FromInputValue for Arc<T> {
 impl<T: FromInputValue> FromInputValue for Cell<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -56,7 +56,7 @@ impl<T: FromInputValue> FromInputValue for Cell<T> {
 impl<T: FromInputValue> FromInputValue for RefCell<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -68,7 +68,7 @@ impl<T: FromInputValue> FromInputValue for RefCell<T> {
 impl<T: FromInputValue> FromInputValue for UnsafeCell<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -80,7 +80,7 @@ impl<T: FromInputValue> FromInputValue for UnsafeCell<T> {
 impl<T: FromInputValue> FromInputValue for Mutex<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -92,7 +92,7 @@ impl<T: FromInputValue> FromInputValue for Mutex<T> {
 impl<T: FromInputValue> FromInputValue for RwLock<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 
@@ -104,7 +104,7 @@ impl<T: FromInputValue> FromInputValue for RwLock<T> {
 impl<T: FromInputValue> FromInputValue for ManuallyDrop<T> {
     type Context = T::Context;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         T::from_input_value(value, context).map(Self::new)
     }
 

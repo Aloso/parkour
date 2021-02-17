@@ -1,7 +1,7 @@
 use std::collections::{BTreeSet, HashSet, LinkedList, VecDeque};
 use std::hash::Hash;
 
-use crate::{Error, FromInput, FromInputValue, Parse};
+use crate::{Error, FromInputValue};
 
 #[derive(Debug)]
 pub struct ListCtx<C> {
@@ -22,6 +22,7 @@ impl<C: Default> Default for ListCtx<C> {
     }
 }
 
+/*
 impl<T: FromInputValue<Context = C>, C: Clone> FromInput for Vec<T> {
     type Context = ListCtx<C>;
 
@@ -50,15 +51,16 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInput for Vec<T> {
         }
     }
 }
+*/
 
-impl<T: FromInputValue<Context = C>, C: Clone> FromInputValue for Vec<T> {
+impl<T: FromInputValue<Context = C>, C> FromInputValue for Vec<T> {
     type Context = ListCtx<C>;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         if let Some(delim) = context.delimiter {
             let values: Vec<T> = value
                 .split(delim)
-                .map(|s| T::from_input_value(s, context.inner.clone()))
+                .map(|s| T::from_input_value(s, &context.inner))
                 .collect::<Result<_, _>>()?;
 
             let count = values.len();
@@ -68,12 +70,12 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInputValue for Vec<T> {
                 Err(Error::TooManyValues { max: context.max_items, count })
             }
         } else {
-            Ok(vec![T::from_input_value(value, context.inner)?])
+            Ok(vec![T::from_input_value(value, &context.inner)?])
         }
     }
 }
 
-
+/*
 impl<T: FromInputValue<Context = C>, C: Clone> FromInput for VecDeque<T> {
     type Context = ListCtx<C>;
 
@@ -102,15 +104,16 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInput for VecDeque<T> {
         }
     }
 }
+*/
 
-impl<T: FromInputValue<Context = C>, C: Clone> FromInputValue for VecDeque<T> {
+impl<T: FromInputValue<Context = C>, C> FromInputValue for VecDeque<T> {
     type Context = ListCtx<C>;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         if let Some(delim) = context.delimiter {
             let values: VecDeque<T> = value
                 .split(delim)
-                .map(|s| T::from_input_value(s, context.inner.clone()))
+                .map(|s| T::from_input_value(s, &context.inner))
                 .collect::<Result<_, _>>()?;
 
             let count = values.len();
@@ -121,13 +124,13 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInputValue for VecDeque<T> {
             }
         } else {
             let mut vec_deque = Self::with_capacity(1);
-            vec_deque.push_back(T::from_input_value(value, context.inner)?);
+            vec_deque.push_back(T::from_input_value(value, &context.inner)?);
             Ok(vec_deque)
         }
     }
 }
 
-
+/*
 impl<T: FromInputValue<Context = C>, C: Clone> FromInput for LinkedList<T> {
     type Context = ListCtx<C>;
 
@@ -156,15 +159,16 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInput for LinkedList<T> {
         }
     }
 }
+*/
 
-impl<T: FromInputValue<Context = C>, C: Clone> FromInputValue for LinkedList<T> {
+impl<T: FromInputValue<Context = C>, C> FromInputValue for LinkedList<T> {
     type Context = ListCtx<C>;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         if let Some(delim) = context.delimiter {
             let values: LinkedList<T> = value
                 .split(delim)
-                .map(|s| T::from_input_value(s, context.inner.clone()))
+                .map(|s| T::from_input_value(s, &context.inner))
                 .collect::<Result<_, _>>()?;
 
             let count = values.len();
@@ -175,13 +179,13 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInputValue for LinkedList<T> 
             }
         } else {
             let mut list = Self::new();
-            list.push_back(T::from_input_value(value, context.inner)?);
+            list.push_back(T::from_input_value(value, &context.inner)?);
             Ok(list)
         }
     }
 }
 
-
+/*
 impl<T: FromInputValue<Context = C> + Ord, C: Clone> FromInput for BTreeSet<T> {
     type Context = ListCtx<C>;
 
@@ -212,15 +216,16 @@ impl<T: FromInputValue<Context = C> + Ord, C: Clone> FromInput for BTreeSet<T> {
         }
     }
 }
+*/
 
-impl<T: FromInputValue<Context = C> + Ord, C: Clone> FromInputValue for BTreeSet<T> {
+impl<T: FromInputValue<Context = C> + Ord, C> FromInputValue for BTreeSet<T> {
     type Context = ListCtx<C>;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         if let Some(delim) = context.delimiter {
             let values: BTreeSet<T> = value
                 .split(delim)
-                .map(|s| T::from_input_value(s, context.inner.clone()))
+                .map(|s| T::from_input_value(s, &context.inner))
                 .collect::<Result<_, _>>()?;
 
             let count = values.len();
@@ -231,13 +236,13 @@ impl<T: FromInputValue<Context = C> + Ord, C: Clone> FromInputValue for BTreeSet
             }
         } else {
             let mut vec_deque = Self::new();
-            vec_deque.insert(T::from_input_value(value, context.inner)?);
+            vec_deque.insert(T::from_input_value(value, &context.inner)?);
             Ok(vec_deque)
         }
     }
 }
 
-
+/*
 impl<T: FromInputValue<Context = C> + Hash + Eq, C: Clone> FromInput for HashSet<T> {
     type Context = ListCtx<C>;
 
@@ -268,15 +273,16 @@ impl<T: FromInputValue<Context = C> + Hash + Eq, C: Clone> FromInput for HashSet
         }
     }
 }
+*/
 
-impl<T: FromInputValue<Context = C> + Hash + Eq, C: Clone> FromInputValue for HashSet<T> {
+impl<T: FromInputValue<Context = C> + Hash + Eq, C> FromInputValue for HashSet<T> {
     type Context = ListCtx<C>;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         if let Some(delim) = context.delimiter {
             let values: HashSet<T> = value
                 .split(delim)
-                .map(|s| T::from_input_value(s, context.inner.clone()))
+                .map(|s| T::from_input_value(s, &context.inner))
                 .collect::<Result<_, _>>()?;
 
             let count = values.len();
@@ -287,7 +293,7 @@ impl<T: FromInputValue<Context = C> + Hash + Eq, C: Clone> FromInputValue for Ha
             }
         } else {
             let mut vec_deque = Self::with_capacity(1);
-            vec_deque.insert(T::from_input_value(value, context.inner)?);
+            vec_deque.insert(T::from_input_value(value, &context.inner)?);
             Ok(vec_deque)
         }
     }

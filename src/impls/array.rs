@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use crate::{Error, FromInput, FromInputValue, Parse};
+use crate::{Error, FromInputValue};
 
 #[derive(Debug)]
 pub struct ArrayCtx<C> {
@@ -21,17 +21,14 @@ impl<C: Default> Default for ArrayCtx<C> {
 }
 
 
-impl<T: FromInputValue, const N: usize> FromInputValue for [T; N]
-where
-    T::Context: Clone,
-{
+impl<T: FromInputValue, const N: usize> FromInputValue for [T; N] {
     type Context = ArrayCtx<T::Context>;
 
-    fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         if let Some(delim) = context.delimiter {
             let values = value
                 .split(delim)
-                .map(|s| T::from_input_value(s, context.inner.clone()))
+                .map(|s| T::from_input_value(s, &context.inner))
                 .collect::<Result<Vec<T>, _>>()?;
 
             let len = values.len();
@@ -45,6 +42,7 @@ where
     }
 }
 
+/*
 impl<T: FromInputValue, const N: usize> FromInput for [T; N]
 where
     T::Context: Clone,
@@ -76,3 +74,4 @@ where
         }
     }
 }
+*/

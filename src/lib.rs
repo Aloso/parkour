@@ -8,6 +8,7 @@ pub use parse::Parse;
 
 pub use palex::StringInput;
 
+pub mod actions;
 mod error;
 mod from_input;
 pub mod impls;

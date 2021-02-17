@@ -26,7 +26,7 @@ impl StringCtx {
 impl FromInputValue for String {
     type Context = StringCtx;
 
-    fn from_input_value(value: &str, context: StringCtx) -> Result<Self, Error> {
+    fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
         if value.len() < context.min_length || value.len() > context.max_length {
             Err(Error::Unexpected {
                 word: format!(

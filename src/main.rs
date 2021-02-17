@@ -1,9 +1,9 @@
 use std::time::Instant;
 
-use palr::util::{Flag, MapNoValue};
+use palr::actions::{Action, Flag, SetOnce, SetPositional, SetSubcommand};
+use palr::util::MapNoValue;
 use palr::StringInput;
 use palr::{Error, FromInput, FromInputValue, Parse};
-use Flag::*;
 
 fn main() {
     // Command {
@@ -32,7 +32,7 @@ fn main() {
 
 fn main_() -> Result<Command, Error> {
     let mut input = StringInput::new(std::env::args());
-    Command::from_input(&mut input, ()).map_no_value(|| Error::MissingOption {
+    Command::from_input(&mut input, &()).map_no_value(|| Error::MissingOption {
         option: "no arguments provided".to_string(),
     })
 }
@@ -58,7 +58,7 @@ enum Output {
 impl FromInputValue for Output {
     type Context = ();
 
-    fn from_input_value(value: &str, _: ()) -> Result<Self, Error> {
+    fn from_input_value(value: &str, _: &()) -> Result<Self, Error> {
         Ok(match value {
             "rgb" => Output::Rgb,
             "cmy" => Output::Cmy,
@@ -103,7 +103,7 @@ struct Show {
 impl FromInput for Show {
     type Context = ();
 
-    fn from_input<P: Parse>(input: &mut P, _: ()) -> Result<Self, Error> {
+    fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, Error> {
         if input.parse_command("show") || input.parse_command("s") {
             let mut pos1 = None;
             let mut out = None;
@@ -111,67 +111,39 @@ impl FromInput for Show {
             let mut color = None;
 
             while !input.is_empty() {
+                if input.parse_long_flag("") {
+                    input.set_ignore_dashes(true);
+                    continue;
+                }
+
                 if input.parse_long_flag("help") || input.parse_short_flag("h") {
                     println!("Help for `show` subcommand");
                     return Err(Error::EarlyExit);
                 }
 
-                if let Some(new_out) =
-                    input.try_parse_flag_and_value(&[Long("out"), Short("o")], ())?
+                if SetOnce(&mut out).apply(input, &Flag::LongShort("out", "o").into())? {
+                    continue;
+                }
+
+                if SetOnce(&mut size)
+                    .apply(input, &Flag::LongShort("size", "s").into())?
                 {
-                    if out.is_some() {
-                        return Err(Error::TooManyOptionOccurrences {
-                            option: "option `--out`".to_string(),
-                            max: 1,
-                        });
-                    }
-                    out = Some(new_out);
                     continue;
                 }
 
-                if let Some(new_size) = input.try_parse_flag_and_value(
-                    &[Long("size"), Short("s")],
-                    Default::default(),
-                )? {
-                    if size.is_some() {
-                        return Err(Error::TooManyOptionOccurrences {
-                            option: "option `--size`".to_string(),
-                            max: 1,
-                        });
-                    }
-                    size = Some(new_size);
-                    continue;
-                }
-
-                if let Some(new_color) =
-                    input.try_parse_flag_and_value(&[Long("color"), Short("c")], ())?
+                if SetOnce(&mut color)
+                    .apply(input, &Flag::LongShort("color", "c").into())?
                 {
-                    if color.is_some() {
-                        return Err(Error::TooManyOptionOccurrences {
-                            option: "option `--color`".to_string(),
-                            max: 1,
-                        });
-                    }
-                    color = Some(new_color);
                     continue;
                 }
 
-                if let Some(value) = input.value_allows_leading_dashes() {
-                    if pos1.is_some() {
-                        return Err(Error::TooManyOptionOccurrences {
-                            option: "positional argument".to_string(),
-                            max: 1,
-                        });
-                    }
-                    pos1 = Some(value.eat().to_string());
+                if pos1.is_none()
+                    && SetPositional(&mut pos1).apply(input, &"pos1".into())?
+                {
                     continue;
                 }
 
-                if !input.is_empty() {
-                    return Err(Error::Unexpected {
-                        word: input.bump_argument().unwrap().to_string(),
-                    });
-                }
+                input.expect_empty()?;
             }
 
             Ok(Show {
@@ -199,32 +171,26 @@ struct Command {
 impl FromInput for Command {
     type Context = ();
 
-    fn from_input<P: Parse>(input: &mut P, _: ()) -> Result<Self, Error> {
+    fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, Error> {
         input.bump_argument().unwrap();
         let mut show = None;
 
         while !input.is_empty() {
+            if input.parse_long_flag("") {
+                input.set_ignore_dashes(true);
+                continue;
+            }
+
             if input.parse_long_flag("help") || input.parse_short_flag("h") {
                 println!("Help");
                 return Err(Error::EarlyExit);
             }
 
-            if let Some(s) = input.try_parse(())? {
-                if show.is_some() {
-                    return Err(Error::TooManyOptionOccurrences {
-                        option: "subcommand `show`".to_string(),
-                        max: 1,
-                    });
-                }
-                show = Some(s);
+            if SetSubcommand(&mut show).apply(input, &())? {
                 continue;
             }
 
-            if !input.is_empty() {
-                return Err(Error::Unexpected {
-                    word: input.bump_argument().unwrap().to_string(),
-                });
-            }
+            input.expect_empty()?;
         }
         Ok(Command { show })
     }

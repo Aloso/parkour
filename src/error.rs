@@ -8,20 +8,17 @@ pub enum Error {
     /// parse wasn't present at the current position
     NoValue,
 
+    /// This indicates that the argument you tried to parse wasn't present at
+    /// the current position, but was required
+    MissingValue,
+
     /// This indicates that the argument you tried to parse was only partly
     /// present
-    IncompleteValue {
-        part: String,
-    },
+    IncompleteValue(usize),
 
     /// Used when an option or flag should abort argument parsing, like --help
     EarlyExit,
 
-    /// This indicates that the argument you tried to parse wasn't present at
-    /// the current position, but was required
-    MissingValue {
-        flag: String,
-    },
     Unexpected {
         word: String,
     },
@@ -64,10 +61,10 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::NoValue => write!(f, "no value"),
-            Error::IncompleteValue { part } => {
+            Error::MissingValue => write!(f, "missing value"),
+            Error::IncompleteValue(part) => {
                 write!(f, "missing part {} of value", part)
             }
-            Error::MissingValue { flag } => write!(f, "missing value for {}", flag),
             Error::EarlyExit => write!(f, "early exit"),
             Error::Unexpected { word } => write!(f, "unexpected {:?}", word),
             Error::TooManyValues { max, count } => {

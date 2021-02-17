@@ -41,7 +41,7 @@ macro_rules! from_input_value {
             impl FromInputValue for $t {
                 type Context = NumberCtx<$t>;
 
-                fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+                fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
                     context.must_include(value.parse()?)
                 }
 
@@ -57,7 +57,7 @@ macro_rules! from_input_value {
             impl FromInputValue for $t {
                 type Context = NumberCtx<$t>;
 
-                fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+                fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
                     context.must_include(value.parse()?)
                 }
 
@@ -73,7 +73,7 @@ macro_rules! from_input_value {
             impl FromInputValue for $t {
                 type Context = NumberCtx<$t>;
 
-                fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+                fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
                     context.must_include(value.parse()?)
                 }
 
@@ -87,7 +87,7 @@ macro_rules! from_input_value {
             impl FromInputValue for $t {
                 type Context = NumberCtx<$t>;
 
-                fn from_input_value(value: &str, context: Self::Context) -> Result<Self, Error> {
+                fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
                     context.must_include(value.parse()?)
                 }
 
