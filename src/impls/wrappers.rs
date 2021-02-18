@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::cell::{Cell, RefCell, UnsafeCell};
 use std::mem::ManuallyDrop;
 use std::rc::Rc;
@@ -110,5 +111,21 @@ impl<T: FromInputValue> FromInputValue for ManuallyDrop<T> {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
+    }
+}
+
+impl<T: ToOwned> FromInputValue for Cow<'static, T>
+where
+    T::Owned: FromInputValue,
+{
+    type Context = <T::Owned as FromInputValue>::Context;
+
+    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
+        let v = <T::Owned as FromInputValue>::from_input_value(value, context)?;
+        Ok(Cow::Owned(v))
+    }
+
+    fn allow_leading_dashes(context: &Self::Context) -> bool {
+        <T::Owned as FromInputValue>::allow_leading_dashes(context)
     }
 }

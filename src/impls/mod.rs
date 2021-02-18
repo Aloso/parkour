@@ -3,6 +3,7 @@
 
 mod array;
 mod bool;
+mod char;
 mod list;
 mod numbers;
 mod string;

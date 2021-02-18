@@ -1,3 +1,7 @@
+use std::borrow::Cow;
+use std::ffi::OsString;
+use std::path::PathBuf;
+
 use crate::{Error, FromInputValue};
 
 /// The parsing context for strings
@@ -44,6 +48,72 @@ impl FromInputValue for String {
             ))
         } else {
             Ok(value.to_string())
+        }
+    }
+
+    fn allow_leading_dashes(context: &Self::Context) -> bool {
+        context.allow_leading_dashes
+    }
+}
+
+impl FromInputValue for OsString {
+    type Context = StringCtx;
+
+    fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
+        if value.len() < context.min_length || value.len() > context.max_length {
+            Err(Error::unexpected_value(
+                format!("string with length {}", value.len()),
+                format!(
+                    "length between {} and {}",
+                    context.min_length, context.max_length,
+                ),
+            ))
+        } else {
+            Ok(value.into())
+        }
+    }
+
+    fn allow_leading_dashes(context: &Self::Context) -> bool {
+        context.allow_leading_dashes
+    }
+}
+
+impl FromInputValue for PathBuf {
+    type Context = StringCtx;
+
+    fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
+        if value.len() < context.min_length || value.len() > context.max_length {
+            Err(Error::unexpected_value(
+                format!("string with length {}", value.len()),
+                format!(
+                    "length between {} and {}",
+                    context.min_length, context.max_length,
+                ),
+            ))
+        } else {
+            Ok(value.into())
+        }
+    }
+
+    fn allow_leading_dashes(context: &Self::Context) -> bool {
+        context.allow_leading_dashes
+    }
+}
+
+impl FromInputValue for Cow<'static, str> {
+    type Context = StringCtx;
+
+    fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
+        if value.len() < context.min_length || value.len() > context.max_length {
+            Err(Error::unexpected_value(
+                format!("string with length {}", value.len()),
+                format!(
+                    "length between {} and {}",
+                    context.min_length, context.max_length,
+                ),
+            ))
+        } else {
+            Ok(Cow::Owned(value.into()))
         }
     }
 
