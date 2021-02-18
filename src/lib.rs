@@ -322,7 +322,6 @@ pub fn parser() -> impl Parse {
     StringInput::new(std::env::args())
 }
 
-
 /// A prelude to make it easier to import all the needed types and traits. Use
 /// it like this:
 ///

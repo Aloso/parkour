@@ -1,6 +1,5 @@
 use crate::{Input, TokenKind};
 
-
 /// The default input type for argument parsing. This is generic over its
 /// iterator type and can be used with [`std::env::args`]. See
 /// [`StringInput::new()`] for more information.
@@ -82,7 +81,6 @@ impl<I: Iterator<Item = String>> StringInput<I> {
         (current, current, kind)
     }
 }
-
 
 impl<I: Iterator<Item = String>> Input for StringInput<I> {
     fn current(&self) -> Option<(&str, TokenKind)> {

@@ -53,7 +53,6 @@ impl Flag<'_> {
     }
 }
 
-
 impl fmt::Display for Flag<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -72,7 +71,6 @@ impl fmt::Display for Flag<'_> {
         }
     }
 }
-
 
 /// The parsing context for a named argument, e.g. `--help=config`.
 #[derive(Debug, Clone)]
@@ -95,7 +93,6 @@ impl<'a, C: Default> From<Flag<'a>> for ArgCtx<'a, C> {
         ArgCtx { flag, inner: C::default() }
     }
 }
-
 
 /// The parsing context for a positional argument.
 #[derive(Debug, Clone)]

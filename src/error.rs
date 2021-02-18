@@ -99,7 +99,6 @@ impl From<ErrorInner> for Error {
     }
 }
 
-
 /// The error type when parsing command-line arguments
 #[derive(Debug, PartialEq)]
 pub enum ErrorInner {

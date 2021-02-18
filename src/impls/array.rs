@@ -20,7 +20,6 @@ impl<C: Default> Default for ArrayCtx<C> {
     }
 }
 
-
 impl<T: FromInputValue, const N: usize> FromInputValue for [T; N] {
     type Context = ArrayCtx<T::Context>;
 

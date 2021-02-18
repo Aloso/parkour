@@ -75,7 +75,6 @@ impl<'a, P: Input> AsRef<str> for InputPart<'a, P> {
     }
 }
 
-
 /// A helper struct for checking if the next token matches your expectations and
 /// consuming the token thereupon. Instances of this type can be created with
 /// the following method:

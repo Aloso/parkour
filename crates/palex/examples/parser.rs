@@ -18,7 +18,6 @@ pub fn main() -> Result<(), String> {
     let mut output: Option<String> = None;
     let mut subcommand: Option<Subcommand> = None;
 
-
     // consume tokens until the input is empty
     while !input.is_empty() {
         // All methods that start with `eat` work the same: They check if the current

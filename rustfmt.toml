@@ -1,5 +1,3 @@
-unstable_features = true
-blank_lines_upper_bound = 2
 max_width = 90
 use_small_heuristics = "Max"
 wrap_comments = true

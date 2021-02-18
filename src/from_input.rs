@@ -100,7 +100,6 @@ pub trait FromInputValue: Sized {
     }
 }
 
-
 impl<T: FromInputValue> FromInput for T {
     type Context = ArgCtx<'static, T::Context>;
 

@@ -34,7 +34,6 @@ pub trait Action<C> {
     fn apply<P: Parse>(self, input: &mut P, context: &C) -> ApplyResult;
 }
 
-
 /// Set the parsed value, ensuring that it is set at most once. When the action
 /// is performed and the value is not in its initial state (e.g. `None`), an
 /// error is returned.
@@ -66,7 +65,6 @@ pub struct SetPositional<'a, T>(pub &'a mut T);
 
 /// Like [`Set`], but works for subcommands.
 pub struct SetSubcommand<'a, T>(pub &'a mut T);
-
 
 impl<T: FromInputValue> Action<T::Context> for SetPositional<'_, T> {
     fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {

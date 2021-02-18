@@ -55,7 +55,6 @@ pub trait Input {
     /// positional, i.e. leading dashes are ignored.
     fn ignore_dashes(&self) -> bool;
 
-
     /// Returns `true` if the input is empty. This means that all arguments have
     /// been fully parsed.
     fn is_empty(&self) -> bool {

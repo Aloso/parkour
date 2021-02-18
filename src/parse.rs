@@ -69,7 +69,6 @@ pub trait Parse: Input + Sized {
         }
     }
 
-
     /// Convenience function for parsing a flag with a single dash, like `-h` or
     /// `-foo`. Returns `true` if it succeeded.
     fn parse_short_flag(&mut self, flag: &str) -> bool;
