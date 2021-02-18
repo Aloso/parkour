@@ -44,8 +44,8 @@ pub trait FromInput: Sized {
     ) -> Result<Self, Error>;
 
     /// Extract information from the command-line input, but convert
-    /// [`Error::NoValue`] to [`Option::None`]. This is useful when you want to
-    /// bubble up all errors except for [`Error::NoValue`]:
+    /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
+    /// bubble up all errors except for [`Error::no_value`]:
     ///
     /// ```rust,no_test
     /// if let Some(value) = bool::try_from_input(input, &())? {

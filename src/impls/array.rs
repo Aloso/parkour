@@ -62,7 +62,7 @@ where
 
             for _ in 0..N {
                 match input.parse_value(context.inner.clone()) {
-                    Err(Error::NoValue) => break,
+                    Err(Error::no_value) => break,
                     Err(e) => return Err(e),
                     Ok(value) => values.push(value),
                 }

@@ -71,7 +71,7 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInput for Vec<T> {
             if context.greedy {
                 for _ in 0..context.max_items {
                     match input.parse_value(context.inner.clone()) {
-                        Err(Error::NoValue) => break,
+                        Err(Error::no_value) => break,
                         Err(e) => return Err(e),
                         Ok(value) => values.push(value),
                     }
@@ -124,7 +124,7 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInput for VecDeque<T> {
             if context.greedy {
                 for _ in 0..context.max_items {
                     match input.parse_value(context.inner.clone()) {
-                        Err(Error::NoValue) => break,
+                        Err(Error::no_value) => break,
                         Err(e) => return Err(e),
                         Ok(value) => values.push_back(value),
                     }
@@ -179,7 +179,7 @@ impl<T: FromInputValue<Context = C>, C: Clone> FromInput for LinkedList<T> {
             if context.greedy {
                 for _ in 0..context.max_items {
                     match input.parse_value(context.inner.clone()) {
-                        Err(Error::NoValue) => break,
+                        Err(Error::no_value) => break,
                         Err(e) => return Err(e),
                         Ok(value) => values.push_back(value),
                     }
@@ -234,7 +234,7 @@ impl<T: FromInputValue<Context = C> + Ord, C: Clone> FromInput for BTreeSet<T> {
             if context.greedy {
                 for _ in 0..context.max_items {
                     match input.parse_value(context.inner.clone()) {
-                        Err(Error::NoValue) => break,
+                        Err(Error::no_value) => break,
                         Err(e) => return Err(e),
                         Ok(value) => {
                             values.insert(value);
@@ -291,7 +291,7 @@ impl<T: FromInputValue<Context = C> + Hash + Eq, C: Clone> FromInput for HashSet
             if context.greedy {
                 for _ in 0..context.max_items {
                     match input.parse_value(context.inner.clone()) {
-                        Err(Error::NoValue) => break,
+                        Err(Error::no_value) => break,
                         Err(e) => return Err(e),
                         Ok(value) => {
                             values.insert(value);

@@ -18,8 +18,8 @@ pub trait Parse: Input + Sized {
     }
 
     /// Parse something using the [`FromInput`] trait, but convert
-    /// [`Error::NoValue`] to [`Option::None`]. This is useful when you want to
-    /// bubble up all errors except for [`Error::NoValue`]:
+    /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
+    /// bubble up all errors except for [`Error::no_value`]:
     ///
     /// ```rust,no_test
     /// if let Some(x) = input.try_parse(&())? {
@@ -41,8 +41,8 @@ pub trait Parse: Input + Sized {
     ) -> Result<V, Error>;
 
     /// Parse a _value_ using the [`FromInputValue`] trait, but convert
-    /// [`Error::NoValue`] to [`Option::None`]. This is useful when you want to
-    /// bubble up all errors except for [`Error::NoValue`]:
+    /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
+    /// bubble up all errors except for [`Error::no_value`]:
     ///
     /// ```rust,no_test
     /// if let Some(value) = input.try_parse_value(&())? {
