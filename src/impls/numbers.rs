@@ -46,7 +46,6 @@ macro_rules! from_input_value {
                     context.must_include(value.parse()?)
                 }
 
-                #[allow(unused_comparisons)]
                 fn allow_leading_dashes(context: &Self::Context) -> bool {
                     context.min.is_negative()
                 }
@@ -62,7 +61,6 @@ macro_rules! from_input_value {
                     context.must_include(value.parse()?)
                 }
 
-                #[allow(unused_comparisons)]
                 fn allow_leading_dashes(context: &Self::Context) -> bool {
                     context.min.get().is_negative()
                 }
@@ -78,7 +76,6 @@ macro_rules! from_input_value {
                     context.must_include(value.parse()?)
                 }
 
-                #[allow(unused_comparisons)]
                 fn allow_leading_dashes(_: &Self::Context) -> bool { false }
             }
         )*
@@ -92,7 +89,6 @@ macro_rules! from_input_value {
                     context.must_include(value.parse()?)
                 }
 
-                #[allow(unused_comparisons)]
                 fn allow_leading_dashes(context: &Self::Context) -> bool {
                     context.min.is_sign_negative()
                 }

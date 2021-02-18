@@ -20,13 +20,13 @@ use crate::{Error, Parse};
 /// impl FromInput for Foo {
 ///     type Context = FooCtx;
 ///
-///     fn from_input<P: Parse>(input: &mut P, context: &FooCtx) -> Result<Self, Error> {
-///         let num: usize = input.parse_value(&())?;
+///     fn from_input<P: Parse>(input: &mut P, context: &FooCtx) -> Result<Self, parkour::Error> {
+///         let num: usize = input.parse_value(&Default::default())?;
 ///
 ///         if context.even && num % 2 != 0 {
-///             Err(Error::unexpected_value(num, "even number"))
+///             Err(parkour::Error::unexpected_value(num, "even number"))
 ///         } else if !context.even && num % 2 == 0 {
-///             Err(Error::unexpected_value(num, "odd number"))
+///             Err(parkour::Error::unexpected_value(num, "odd number"))
 ///         } else {
 ///             Ok(Foo(num))
 ///         }
@@ -47,10 +47,13 @@ pub trait FromInput: Sized {
     /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
     /// bubble up all errors except for [`Error::no_value`]:
     ///
-    /// ```rust,no_test
-    /// if let Some(value) = bool::try_from_input(input, &())? {
+    /// ```no_run
+    /// # use parkour::prelude::*;
+    /// # let input: &mut parkour::StringInput = todo!();
+    /// if let Some(value) = bool::try_from_input(input, &Flag::Short("b").into())? {
     ///     // do something with value
     /// }
+    /// # Ok::<(), parkour::Error>(())
     /// ```
     fn try_from_input<P: Parse>(
         input: &mut P,
@@ -81,9 +84,11 @@ pub trait FromInputValue: Sized {
     /// invoked directly. Instead you can use [`Parse::parse_value`] and
     /// [`Parse::try_parse_value`]:
     ///
-    /// ```rust,no_test
+    /// ```no_run
+    /// # use parkour::prelude::*;
     /// let mut input = parkour::parser();
     /// let n: i32 = input.parse_value(&NumberCtx { min: -1000, max: 1000 })?;
+    /// # Ok::<(), parkour::Error>(())
     /// ```
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error>;
 

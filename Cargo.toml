@@ -12,3 +12,8 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 palex = { version = "0.1.0", path = "crates/palex" }
+parkour_derive = { version = "0.1.0", path = "crates/parkour_derive", optional = true }
+
+[features]
+derive = ["parkour_derive"]
+default = ["derive"]

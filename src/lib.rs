@@ -42,43 +42,36 @@
 //! ```
 //!
 //! `bool`, `u8` and `String` can all be parsed by default. To parse
-//! `ColorSpace`, we have to implement the [`FromInputValue`] trait:
+//! `ColorSpace`, we have to implement the [`FromInputValue`] trait. This
+//! easiest by using the derive macro:
 //!
 //! ```
 //! # use parkour::prelude::*;
-//! # enum ColorSpace { Rgb, Cmy, Cmyk, Hsv, Hsl, CieLab }
-//! #
-//! impl FromInputValue for ColorSpace {
-//!     type Context = ();  // don't worry about this part for now.
-//!
-//!     fn from_input_value(value: &str, _: &Self::Context) -> Result<Self, parkour::Error> {
-//!         match value {
-//!             "rgb" => Ok(ColorSpace::Rgb),
-//!             "cmy" => Ok(ColorSpace::Cmy),
-//!             "cmyk" => Ok(ColorSpace::Cmyk),
-//!             "hsv" => Ok(ColorSpace::Hsv),
-//!             "hsl" => Ok(ColorSpace::Hsl),
-//!             "cielab" => Ok(ColorSpace::CieLab),
-//!             v => Err(parkour::Error::unexpected_value(v, "rgb, cmy, cmyk, hsv, hsl or cielab")),
-//!         }
-//!     }
+//! #[derive(FromInputValue)]
+//! enum ColorSpace {
+//!     Rgb,
+//!     Cmy,
+//!     Cmyk,
+//!     Hsv,
+//!     Hsl,
+//!     CieLab,
 //! }
 //! ```
 //!
-//! This could be simplified with a derive macro, but I haven't gotten around to
-//! implement that yet. Help is appreciated!
+//! This parses the names of the enum variants case-insensitively. When an
+//! invalid value is provided, the error message will say something like:
 //!
-//! Now let's implement `Show` as a subcommand:
+//! ```text
+//! unexpected value, got `foo`, expected rgb, cmy, cmyk, hsv, hsl or cielab
+//! ```
+//!
+//! Now let's implement `Show` as a subcommand. Unfortunately, there's no
+//! convenient derive macro (yet):
 //!
 //! ```
 //! # use parkour::prelude::*;
+//! # #[derive(FromInputValue)]
 //! # enum ColorSpace { Rgb, Cmy, Cmyk, Hsv, Hsl, CieLab }
-//! # impl FromInputValue for ColorSpace {
-//! #     type Context = ();
-//! #     fn from_input_value(_: &str, _: &Self::Context) -> Result<Self, parkour::Error> {
-//! #         todo!()
-//! #     }
-//! # }
 //! #
 //! struct Show {
 //!     pos1: String,
@@ -127,13 +120,9 @@
 //! }
 //! ```
 //!
-//! To parse a subcommand, we implement the [`FromInput`] trait. This trait is
-//! similar, but more powerful than the [`FromInputValue`] trait, as it can
-//! consume an arbitrary number of arguments.
-//!
-//! To parse the subcommand, we first check if the next argument is the word
-//! `show`. If that's the case, we iterate over the remaining input, until it is
-//! empty.
+//! To parse a subcommand, we implement the [`FromInput`] trait. We first check
+//! if the next argument is the word `show`. If that's the case, we iterate over
+//! the remaining input, until it is empty.
 //!
 //! In the subcommand, we expect two named arguments (`--color-space` and
 //! `--size`) and a positional argument (`pos`). Therefore, in each iteration,
@@ -211,11 +200,13 @@
 //! # }
 //! # impl FromInput for Command {
 //! #     type Context = ();
-//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, Error> {
-//! #         todo!()
+//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//! #         Ok(Command { color: None, show: None })
 //! #     }
 //! # }
 //! #
+//! use std::error::Error;
+//!
 //! fn main() {
 //!     match Command::from_input(&mut parkour::parser(), &()) {
 //!         Ok(command) => {
@@ -245,16 +236,26 @@
 //! returned when parsing was aborted and can be ignored. This error can be used
 //! e.g. when the `--help` flag is encountered:
 //!
-//! ```rust,no_test
+//! ```no_run
+//! # use parkour::prelude::*;
+//! # struct Command {
+//! #     color: Option<bool>,
+//! #     show: Option<()>,
+//! # }
 //! impl FromInput for Command {
 //!     type Context = ();
 //!
 //!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//! #       let color = None;
+//! #       let show = None;
 //!         // <snip>
 //!         while !input.is_empty() {
 //!             if input.parse_long_flag("help") || input.parse_short_flag("h") {
-//!                 println!("Usage: my-program [-h,--help] [show {-c,--color-space VALUE} [-s,--size N] {pos1}]");
-//!                 return Err(Error::early_exit());
+//!                 println!("Usage:\n\
+//!                     my-program [-h,--help]\n\
+//!                     my-program show POS1 -c,--color-space VALUE [-s,--size N]");
+//!
+//!                 return Err(parkour::Error::early_exit());
 //!             }
 //!
 //!             // <snip>
@@ -268,11 +269,18 @@
 //! causes the remaining tokens to be treated as positional arguments, even if
 //! they start with a dash. This is easily implemented:
 //!
-//! ```rust,no_test
+//! ```no_run
+//! # use parkour::prelude::*;
+//! # struct Command {
+//! #     color: Option<bool>,
+//! #     show: Option<()>,
+//! # }
 //! impl FromInput for Command {
 //!     type Context = ();
 //!
 //!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//! #       let color = None;
+//! #       let show = None;
 //!         // <snip>
 //!         while !input.is_empty() {
 //!             if input.parse_long_flag("") {
@@ -297,6 +305,9 @@ pub use from_input::{FromInput, FromInputValue};
 pub use parse::Parse;
 
 pub use palex::{Input, StringInput};
+
+#[cfg(feature = "derive")]
+pub use parkour_derive::FromInputValue;
 
 pub mod actions;
 mod error;

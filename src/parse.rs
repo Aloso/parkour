@@ -21,10 +21,14 @@ pub trait Parse: Input + Sized {
     /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
     /// bubble up all errors except for [`Error::no_value`]:
     ///
-    /// ```rust,no_test
-    /// if let Some(x) = input.try_parse(&())? {
+    /// ```no_run
+    /// # use parkour::prelude::*;
+    /// # let input: parkour::StringInput = todo!();
+    /// if let Some(x) = input.try_parse(&Flag::Short("o").into())? {
     ///     // do something with x
+    /// #  let _: usize = x;
     /// }
+    /// # Ok::<(), parkour::Error>(())
     /// ```
     #[inline]
     fn try_parse<F: FromInput>(
@@ -44,10 +48,14 @@ pub trait Parse: Input + Sized {
     /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
     /// bubble up all errors except for [`Error::no_value`]:
     ///
-    /// ```rust,no_test
-    /// if let Some(value) = input.try_parse_value(&())? {
+    /// ```no_run
+    /// # use parkour::prelude::*;
+    /// # let input: parkour::StringInput = todo!();
+    /// if let Some(value) = input.try_parse_value(&Default::default())? {
     ///     // do something with value
+    /// #  let _: usize = value;
     /// }
+    /// # Ok::<(), parkour::Error>(())
     /// ```
     #[inline]
     fn try_parse_value<V: FromInputValue>(
