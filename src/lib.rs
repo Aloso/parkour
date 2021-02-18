@@ -10,6 +10,10 @@
 //!
 //! ## Getting started
 //!
+//! Parkour requires const generics. The first rust version that supports them
+//! is Rust 1.51 (`rustc 1.51.0-beta.2`). You can install it with `rustup
+//! default beta`.
+//!
 //! It's recommended to import the [prelude](./prelude/index.html):
 //!
 //! ```
