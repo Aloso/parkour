@@ -9,6 +9,9 @@ description = "A fast, extensible command-line arguments parser"
 edition = "2018"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
+categories = ["command-line-interface"]
+documentation = "https://docs.rs/parkour"
+repository = "https://github.com/Aloso/parkour"
 
 [dependencies]
 palex = { version = "0.1.0", path = "crates/palex" }

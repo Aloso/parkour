@@ -5,6 +5,10 @@ authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 edition = "2018"
 description = "A fast, small, dependency-free crate for lexing command-line arguments"
 readme = "README.md"
+documentation = "https://docs.rs/palex"
 license = "MIT OR Apache-2.0"
+categories = ["command-line-interface"]
+exclude = ["examples"]
+repository = "https://github.com/Aloso/parkour"
 
 [dependencies]

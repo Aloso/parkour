@@ -3,11 +3,21 @@ name = "parkour_derive"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 edition = "2018"
+description = "Derive macros for parkour"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+categories = ["command-line-interface"]
+repository = "https://github.com/Aloso/parkour"
+documentation = "https://docs.rs/parkour_derive"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0" }
 quote = "1.0"
 proc-macro2 = "1.0"
+
+[dependencies.syn]
+version = "1.0"
+default-features = false
+features = ["derive", "parsing", "printing", "proc-macro"]
