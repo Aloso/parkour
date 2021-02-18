@@ -1,7 +1,13 @@
 //! A fast, extensible, command-line arguments parser.
+//!
+//! This library is very new, so expect regular breaking changes. If you find a
+//! bug or lacking documentation, don't hesitate to open an
+//! [issue](https://github.com/Aloso/parkour/issues) or a pull request.
+//!
+//! This crate started as an experiment, so I'm not sure yet if I want to maintain it long-term. See [here](https://github.com/Aloso/parkour/issues/1) for more.
 
 #![forbid(unsafe_code)]
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 pub use error::{Error, ErrorInner};
 pub use from_input::{FromInput, FromInputValue};
@@ -35,6 +41,6 @@ pub mod prelude {
         Unset,
     };
     pub use crate::impls::{ListCtx, NumberCtx, StringCtx};
-    pub use crate::util::{Flag, OptionCtx, PosCtx};
+    pub use crate::util::{ArgCtx, Flag, PosCtx};
     pub use crate::{FromInput, FromInputValue, Parse};
 }

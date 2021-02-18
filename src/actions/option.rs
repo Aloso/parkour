@@ -1,15 +1,15 @@
-use crate::util::{Flag, OptionCtx, PosCtx};
+use crate::util::{ArgCtx, Flag, PosCtx};
 use crate::{Error, ErrorInner, FromInput, FromInputValue, Parse};
 
 use super::{
     Action, ApplyResult, Reset, Set, SetOnce, SetPositional, SetSubcommand, Unset,
 };
 
-impl<V: FromInputValue> Action<OptionCtx<'static, V::Context>> for Set<'_, Option<V>> {
+impl<V: FromInputValue> Action<ArgCtx<'static, V::Context>> for Set<'_, Option<V>> {
     fn apply<P: Parse>(
         self,
         input: &mut P,
-        context: &OptionCtx<'static, V::Context>,
+        context: &ArgCtx<'static, V::Context>,
     ) -> ApplyResult {
         match input
             .try_parse(context)
@@ -24,13 +24,11 @@ impl<V: FromInputValue> Action<OptionCtx<'static, V::Context>> for Set<'_, Optio
     }
 }
 
-impl<V: FromInputValue> Action<OptionCtx<'static, V::Context>>
-    for SetOnce<'_, Option<V>>
-{
+impl<V: FromInputValue> Action<ArgCtx<'static, V::Context>> for SetOnce<'_, Option<V>> {
     fn apply<P: Parse>(
         self,
         input: &mut P,
-        context: &OptionCtx<'static, V::Context>,
+        context: &ArgCtx<'static, V::Context>,
     ) -> ApplyResult {
         match input
             .try_parse(context)
@@ -39,7 +37,7 @@ impl<V: FromInputValue> Action<OptionCtx<'static, V::Context>>
             Some(s) => {
                 if self.0.is_some() {
                     return Err(ErrorInner::TooManyArgOccurrences {
-                        option: context.flag.first_to_string(),
+                        arg: context.flag.first_to_string(),
                         max: Some(1),
                     }
                     .into());
@@ -68,7 +66,7 @@ impl<'a, V: FromInputValue> Action<Flag<'a>> for Unset<'_, Option<V>> {
         if Flag::from_input(input, context)? {
             if self.0.is_none() {
                 return Err(ErrorInner::TooManyArgOccurrences {
-                    option: context.first_to_string(),
+                    arg: context.first_to_string(),
                     max: None,
                 }
                 .into());
@@ -92,7 +90,7 @@ impl<'a, T: FromInputValue> Action<PosCtx<'a, T::Context>>
         if let Some(s) = input.try_parse_value(&context.inner)? {
             if self.0.is_some() {
                 return Err(ErrorInner::TooManyArgOccurrences {
-                    option: context.name.to_string(),
+                    arg: context.name.to_string(),
                     max: None,
                 }
                 .into());
@@ -110,7 +108,7 @@ impl<T: FromInput> Action<T::Context> for SetSubcommand<'_, Option<T>> {
         if let Some(s) = input.try_parse(context)? {
             if self.0.is_some() {
                 return Err(ErrorInner::TooManyArgOccurrences {
-                    option: "subcommand".to_string(),
+                    arg: "subcommand".to_string(),
                     max: None,
                 }
                 .into());

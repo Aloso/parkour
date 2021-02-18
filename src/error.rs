@@ -114,7 +114,7 @@ pub enum ErrorInner {
     /// The argument you tried to parse was only partly present
     IncompleteValue(usize),
 
-    /// Used when an option or flag should abort argument parsing, like --help
+    /// Used when an argument should abort argument parsing, like --help
     EarlyExit,
 
     /// Indicates that the error originated in the specified argument. This
@@ -165,7 +165,7 @@ pub enum ErrorInner {
     /// An argument was provided more often than allowed
     TooManyArgOccurrences {
         /// The name of the argument that was provided too many times
-        option: String,
+        arg: String,
         /// The maximum number of times the argument may be provided
         max: Option<u32>,
     },
@@ -227,18 +227,18 @@ impl fmt::Display for Error {
             ErrorInner::WrongNumberOfValues { expected, got } => {
                 write!(f, "wrong number of values, expected {}, got {}", expected, got)
             }
-            ErrorInner::MissingArgument { arg: option } => {
-                write!(f, "required {} was not provided", option)
+            ErrorInner::MissingArgument { arg } => {
+                write!(f, "required {} was not provided", arg)
             }
-            ErrorInner::TooManyArgOccurrences { option, max } => {
+            ErrorInner::TooManyArgOccurrences { arg, max } => {
                 if let Some(max) = max {
                     write!(
                         f,
                         "{} was used too often, it can be used at most {} times",
-                        option, max
+                        arg, max
                     )
                 } else {
-                    write!(f, "{} was used too often", option)
+                    write!(f, "{} was used too often", arg)
                 }
             }
 

@@ -1,4 +1,4 @@
-use crate::util::{Flag, OptionCtx};
+use crate::util::{ArgCtx, Flag};
 use crate::{Error, Parse};
 
 /// Trait for extracting information from the command-line input. This is
@@ -97,7 +97,7 @@ pub trait FromInputValue: Sized {
 
 
 impl<T: FromInputValue> FromInput for T {
-    type Context = OptionCtx<'static, T::Context>;
+    type Context = ArgCtx<'static, T::Context>;
 
     fn from_input<P: Parse>(
         input: &mut P,

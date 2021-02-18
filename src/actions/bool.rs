@@ -30,7 +30,7 @@ impl<'a> Action<Flag<'a>> for SetOnce<'_, bool> {
         if Flag::from_input(input, context)? {
             if *self.0 {
                 return Err(ErrorInner::TooManyArgOccurrences {
-                    option: context.first_to_string(),
+                    arg: context.first_to_string(),
                     max: Some(1),
                 }
                 .into());
@@ -48,7 +48,7 @@ impl<'a> Action<Flag<'a>> for Unset<'_, bool> {
         if Flag::from_input(input, context)? {
             if !*self.0 {
                 return Err(ErrorInner::TooManyArgOccurrences {
-                    option: context.first_to_string(),
+                    arg: context.first_to_string(),
                     max: None,
                 }
                 .into());

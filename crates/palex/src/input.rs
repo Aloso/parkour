@@ -69,7 +69,7 @@ pub trait Input {
     }
 
     /// Returns `true` if a value within the same argument is expected. Or in
-    /// other words, if we just consumed a single-dash option or an equals sign
+    /// other words, if we just consumed a single-dash flag or an equals sign
     /// and there are remaining bytes in the same argument.
     fn can_parse_value_no_whitespace(&self) -> bool {
         if let Some((_, current)) = self.current() {
@@ -79,9 +79,9 @@ pub trait Input {
         }
     }
 
-    /// Returns `true` if the current token can be parsed as a flag or option
-    /// (e.g. `-h`, `--help`).
-    fn can_parse_dash_option(&self) -> bool {
+    /// Returns `true` if the current token can be parsed as a flag or named
+    /// argument (e.g. `-h`, `--help=config`).
+    fn can_parse_dash_argument(&self) -> bool {
         if let Some((_, current)) = self.current() {
             matches!(
                 current,

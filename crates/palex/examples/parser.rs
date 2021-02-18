@@ -43,7 +43,7 @@ pub fn main() -> Result<(), String> {
             continue;
         }
 
-        // The -o/--out option expects a string value.
+        // The -o/--out argument expects a string value.
         // This value can be given after a equals sign (e.g. `--out=foo`) or a space
         // (e.g. `--out foo`)
         if input.eat_one_dash("o").is_some() || input.eat_two_dashes("out").is_some() {
@@ -71,7 +71,7 @@ pub fn main() -> Result<(), String> {
         }
 
         // Every branch above ends with a `return` or `continue` statement.
-        // Therefore, if we reach this point, none of the above options
+        // Therefore, if we reach this point, none of the above arguments
         // could be parsed.
         if let Some(arg) = input.value_allows_leading_dashes() {
             return Err(format!("Unexpected {:?} argument", arg.eat()));
@@ -114,7 +114,7 @@ fn parse_subcommand(input: &mut impl palex::Input) -> Result<Option<Subcommand>,
 fn parse_rgb(input: &mut impl palex::Input) -> Result<Option<Subcommand>, String> {
     let mut subcommand: Option<Subcommand> = None;
 
-    // Required option with 3 values. They can be comma-separated, e.g.
+    // Required argument with 3 values. They can be comma-separated, e.g.
     // `--rgb=0,70,255`, or appear in the following arguments, e.g.
     // `--rgb 0 70 255`
     if input.eat_two_dashes("rgb").is_some() {

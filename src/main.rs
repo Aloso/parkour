@@ -42,7 +42,7 @@ fn main() {
 /// Main command
 #[derive(Debug)]
 struct Command {
-    /// `-c/--color` option
+    /// `-c/--color` argument
     color: Option<bool>,
     /// `s/show` subcommand
     show: Option<Show>,
@@ -88,9 +88,9 @@ impl FromInput for Command {
 struct Show {
     /// first positional argument
     pos1: String,
-    /// `-o/--out` option
+    /// `-o/--out` argument
     out: ColorSpace,
-    /// `-s/--size` option, default: 4
+    /// `-s/--size` argument, default: 4
     size: u8,
 }
 

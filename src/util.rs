@@ -1,3 +1,5 @@
+//! Several utility types.
+
 use std::fmt;
 use std::fmt::Write as _;
 
@@ -72,32 +74,40 @@ impl fmt::Display for Flag<'_> {
 }
 
 
+/// The parsing context for a named argument, e.g. `--help=config`.
 #[derive(Debug, Clone)]
-pub struct OptionCtx<'a, C> {
+pub struct ArgCtx<'a, C> {
+    /// The flag before the argument value(s)
     pub flag: Flag<'a>,
+    /// The context for the argument value(s)
     pub inner: C,
 }
 
-impl<'a, C> OptionCtx<'a, C> {
+impl<'a, C> ArgCtx<'a, C> {
+    /// Creates a new `ArgCtx` instance
     pub fn new(flag: Flag<'a>, inner: C) -> Self {
         Self { flag, inner }
     }
 }
 
-impl<'a, C: Default> From<Flag<'a>> for OptionCtx<'a, C> {
+impl<'a, C: Default> From<Flag<'a>> for ArgCtx<'a, C> {
     fn from(flag: Flag<'a>) -> Self {
-        OptionCtx { flag, inner: C::default() }
+        ArgCtx { flag, inner: C::default() }
     }
 }
 
 
+/// The parsing context for a positional argument.
 #[derive(Debug, Clone)]
 pub struct PosCtx<'a, C> {
+    /// The name of the positional argument, used in error messages
     pub name: &'a str,
+    /// The context for the argument value
     pub inner: C,
 }
 
 impl<'a, C> PosCtx<'a, C> {
+    /// Creates a new `PosCtx` instance
     pub fn new(name: &'a str, inner: C) -> Self {
         Self { name, inner }
     }
