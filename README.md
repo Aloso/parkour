@@ -2,7 +2,12 @@
 
 A fast, extensible, command-line arguments parser.
 
-[Documentation](https://docs.rs/parkour) · [![Tests](https://github.com/Aloso/parkour/workflows/Test/badge.svg)](https://github.com/Aloso/parkour/actions?query=workflow%3ATest)
+[![Documentation](https://img.shields.io/badge/documentation-docs.rs-blue?style=flat-square)](https://docs.rs/parkour)
+[![Crates.io](https://img.shields.io/crates/v/parkour?style=flat-square)](https://crates.io/crates/parkour)
+[![Downloads](https://img.shields.io/crates/d/parkour?style=flat-square)](https://crates.io/crates/parkour)
+[![License-MIT](<https://img.shields.io/badge/license-MIT-blue?style=flat-square>)](./LICENSE-MIT)
+[![License-Apache](<https://img.shields.io/badge/license-Apache 2.0-blue?style=flat-square>)](./LICENSE-MIT)
+[![Checks](https://flat.badgen.net/github/checks/Aloso/parkour/main)](https://github.com/Aloso/parkour/actions)
 
 ## Introduction 📚
 
