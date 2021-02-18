@@ -2,7 +2,7 @@
 
 A fast, extensible, command-line arguments parser.
 
-[Documentation](https://docs.rs/parkour) · [![Tests](https://github.com/Aloso/colo/workflows/Test/badge.svg)](https://github.com/Aloso/colo/actions?query=workflow%3ATest)
+[Documentation](https://docs.rs/parkour) · [![Tests](https://github.com/Aloso/parkour/workflows/Test/badge.svg)](https://github.com/Aloso/parkour/actions?query=workflow%3ATest)
 
 ## Introduction 📚
 
