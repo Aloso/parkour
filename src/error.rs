@@ -53,9 +53,9 @@ impl Error {
         ErrorInner::MissingValue.into()
     }
 
-    /// Returns `true` if this is a `MissingValue` error
-    pub fn is_missing_value(&self) -> bool {
-        self.inner == ErrorInner::MissingValue
+    /// Returns the [`ErrorInner`] of this error
+    pub fn inner(&self) -> &ErrorInner {
+        &self.inner
     }
 
     /// Create a `EarlyExit` error

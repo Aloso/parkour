@@ -311,7 +311,7 @@ pub use parse::Parse;
 pub use palex::{Input, StringInput};
 
 #[cfg(feature = "derive")]
-pub use parkour_derive::FromInputValue;
+pub use parkour_derive::{FromInput, FromInputValue};
 
 pub mod actions;
 mod error;

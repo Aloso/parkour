@@ -1,4 +1,4 @@
-use crate::part::{InputPart, InputPartLD};
+use crate::part::{InputPart, InputPartLd};
 use crate::TokenKind;
 
 /// The trait for types that can produce tokens from a list of command-line
@@ -227,12 +227,12 @@ pub trait Input {
 
     /// Returns a helper struct for obtaining, validating and eating the next
     /// token. The value is allowed to start with a dash.
-    fn value_allows_leading_dashes(&mut self) -> Option<InputPartLD<'_, Self>>
+    fn value_allows_leading_dashes(&mut self) -> Option<InputPartLd<'_, Self>>
     where
         Self: Sized,
     {
         match self.current_str_with_leading_dashes() {
-            Some(s) => Some(InputPartLD::new(s.len(), self)),
+            Some(s) => Some(InputPartLd::new(s.len(), self)),
             None => None,
         }
     }

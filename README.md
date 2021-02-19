@@ -88,6 +88,61 @@ impl FromInput for Command {
 }
 ```
 
+In the future, I'd like to support a syntax like this:
+
+```rust
+use parkour::prelude::*;
+
+#[derive(FromInput)]
+#[parkour(main, help)]
+#[arg(long = "version", short = "V", function = print_help)]
+struct Command {
+    #[parkour(default = ColorMode::Auto)]
+    #[arg(long = "color", short = "c")]
+    color_mode: ColorMode,
+
+    #[arg(positional)]
+    subcommand: Option<Subcommand>,
+}
+
+#[derive(FromInputValue)]
+enum ColorMode {
+    Always,
+    Auto,
+    Never,
+}
+
+#[derive(FromInput)]
+enum Subcommand {
+    Foo(Foo),
+    Bar(Bar),
+}
+
+#[derive(FromInput)]
+#[parkour(subcommand)]
+struct Foo {
+    #[parkour(default = 0, max = 3)]
+    #[arg(long, short, action = Inc)]
+    verbose: u8,
+
+    #[arg(positional)]
+    values: Vec<String>,
+}
+
+#[derive(FromInput)]
+#[parkour(subcommand)]
+struct Bar {
+    #[parkour(default = false)]
+    #[arg(long, short)]
+    dry_run: bool,
+}
+
+fn print_version(_: &mut impl Parse) -> parkour::Result<()> {
+    println!("command {}", env!("CARGO_PKG_VERSION"));
+    Err(parkour::Error::early_exit())
+}
+```
+
 ## Code of Conduct 🤝
 
 Please be friendly and respectful to others. This should be a place where everyone can feel safe, therefore I intend to enforce the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct).
