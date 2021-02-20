@@ -24,7 +24,7 @@ pub enum Flag<'a> {
     /// A flag with a long and a short alias, e.g. `-h,--help`.
     LongShort(&'a str, &'a str),
     /// A flag with multiple aliases
-    Many(Box<[Flag<'a>]>),
+    Many(Vec<Flag<'a>>),
 }
 
 impl Flag<'_> {

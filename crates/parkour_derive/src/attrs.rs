@@ -1,35 +1,35 @@
-use proc_macro2::{Span, TokenTree};
-use quote::ToTokens;
+use proc_macro2::Span;
+use syn::parse::Parse;
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Attribute, Error, LitStr, Result};
+use syn::{Attribute, Error, Expr, ExprLit, ExprPath, Ident, Lit, Result};
 
-#[derive(PartialEq, Eq)]
 pub enum Attr {
     Parkour(Parkour),
     Arg(Arg),
 }
 
-#[derive(PartialEq, Eq)]
 pub enum Parkour {
     Main,
+    Default(Option<Box<Expr>>),
     Subcommand(Option<String>),
 }
 
 #[derive(PartialEq, Eq)]
-pub struct Arg {
-    pub long: Option<Option<String>>,
-    pub short: Option<Option<String>>,
+pub enum Arg {
+    Named { long: Vec<Option<String>>, short: Vec<Option<String>> },
+    Positional { name: Option<String> },
 }
 
-pub fn parse(attrs: Vec<Attribute>) -> Result<Vec<Attr>> {
+pub fn parse(attrs: Vec<Attribute>) -> Result<Vec<(Attr, Span)>> {
     let mut result = Vec::new();
 
     for a in attrs {
         if let Some(ident) = a.path.get_ident() {
             if *ident == "parkour" {
-                parse_parkour_attrs(a.path.span(), a.tokens, &mut result)?;
+                parse_parkour_attrs(a.tokens, &mut result)?;
             } else if *ident == "arg" {
-                result.push(Attr::Arg(parse_arg_attrs(a.path.span(), a.tokens)?));
+                result.push((Attr::Arg(parse_arg_attrs(a.tokens)?), ident.span()));
             }
         }
     }
@@ -37,148 +37,159 @@ pub fn parse(attrs: Vec<Attribute>) -> Result<Vec<Attr>> {
 }
 
 fn parse_parkour_attrs(
-    path_span: Span,
     tokens: proc_macro2::TokenStream,
-    buf: &mut Vec<Attr>,
+    buf: &mut Vec<(Attr, Span)>,
 ) -> Result<()> {
-    let span = tokens.span();
-    match tokens.into_iter().next() {
-        Some(TokenTree::Group(g)) => {
-            let mut values = Vec::new();
-            parse_attr_tokens(g.stream(), &mut values)?;
-            for (k, sp, v) in values {
-                match (k.as_str(), v) {
-                    ("main", None) => {
-                        buf.push(Attr::Parkour(Parkour::Main));
-                    }
-                    ("subcommand", Some(t)) => {
-                        let s = parse_string(&t)?;
-                        buf.push(Attr::Parkour(Parkour::Subcommand(Some(s))));
-                    }
-                    ("subcommand", None) => {
-                        buf.push(Attr::Parkour(Parkour::Subcommand(None)));
-                    }
-                    (s, _) => {
-                        return Err(Error::new(sp, format!("unexpected key {:?}", s)));
-                    }
-                }
-            }
-            Ok(())
-        }
-        Some(_) => Err(Error::new(span, "expected parentheses")),
-        _ => Err(Error::new(path_span, "expected parentheses")),
-    }
-}
+    let AttrMap(values) = syn::parse2(tokens)?;
 
-fn parse_arg_attrs(path_span: Span, tokens: proc_macro2::TokenStream) -> Result<Arg> {
-    let span = tokens.span();
-    match tokens.into_iter().next() {
-        Some(TokenTree::Group(g)) => {
-            let mut long = None;
-            let mut short = None;
-
-            let mut values = Vec::new();
-            parse_attr_tokens(g.stream(), &mut values)?;
-            for (k, _, v) in values {
-                match (k.as_str(), v) {
-                    ("long", None) => {
-                        long = Some(None);
-                    }
-                    ("long", Some(t)) => {
-                        long = Some(Some(parse_string(&t)?));
-                    }
-                    ("short", None) => {
-                        short = Some(None);
-                    }
-                    ("short", Some(t)) => {
-                        short = Some(Some(parse_string(&t)?));
-                    }
-                    _ => {
-                        return Err(Error::new(span, "unexpected token"));
-                    }
-                }
+    for (id, v) in values {
+        match (id.to_string().as_str(), v) {
+            ("main", None) => {
+                buf.push((Attr::Parkour(Parkour::Main), id.span()));
             }
-            Ok(Arg { long, short })
-        }
-        Some(_) => Err(Error::new(span, "expected parentheses")),
-        _ => Err(Error::new(path_span, "expected parentheses")),
-    }
-}
-
-enum State {
-    Initial,
-    Ident(Span, String),
-    Eq(Span, String),
-    Value(Span, String, TokenTree),
-}
-
-fn parse_attr_tokens(
-    stream: proc_macro2::TokenStream,
-    values: &mut Vec<(String, Span, Option<TokenTree>)>,
-) -> Result<()> {
-    let mut state = State::Initial;
-
-    for s in stream {
-        match state {
-            State::Initial => match s {
-                TokenTree::Ident(i) => {
-                    let new_id = i.to_string();
-                    state = State::Ident(i.span(), new_id);
-                }
-                _ => return Err(Error::new(s.span(), "expected ident")),
-            },
-            State::Ident(sp, k) => {
-                let span = s.span();
-                match s {
-                    TokenTree::Punct(p) if p.as_char() == '=' => {
-                        state = State::Eq(sp, k);
-                    }
-                    TokenTree::Punct(p) if p.as_char() == ',' => {
-                        values.push((k, sp, None));
-                        state = State::Initial;
-                    }
-                    _ => return Err(Error::new(span, "unexpected token")),
-                }
+            ("subcommand", Some(t)) => {
+                let s = parse_string(&t)?;
+                buf.push((Attr::Parkour(Parkour::Subcommand(Some(s))), id.span()));
             }
-            State::Eq(sp, k) => {
-                state = match s {
-                    TokenTree::Group(_) | TokenTree::Ident(_) | TokenTree::Literal(_) => {
-                        State::Value(sp, k, s)
-                    }
-                    TokenTree::Punct(p) => {
-                        return Err(Error::new(p.span(), "unexpected punctuation"));
-                    }
-                };
+            ("subcommand", None) => {
+                buf.push((Attr::Parkour(Parkour::Subcommand(None)), id.span()));
             }
-            State::Value(sp, k, v) => {
-                let span = s.span();
-                match s {
-                    TokenTree::Punct(p) if p.as_char() == ',' => {
-                        values.push((k, sp.join(span).unwrap(), Some(v)));
-                        state = State::Initial;
-                    }
-                    _ => return Err(Error::new(span, "unexpected token")),
-                }
+            ("default", Some(t)) => {
+                buf.push((Attr::Parkour(Parkour::Default(Some(Box::new(t)))), id.span()));
             }
-        }
-    }
-    match state {
-        State::Initial => {}
-        State::Ident(sp, id) => {
-            values.push((id, sp, None));
-        }
-        State::Value(sp, k, v) => {
-            values.push((k, sp.join(v.span()).unwrap(), Some(v)));
-        }
-        State::Eq(sp, _) => {
-            return Err(Error::new(sp, "unexpected trailing punctuation"));
+            ("default", None) => {
+                buf.push((Attr::Parkour(Parkour::Default(None)), id.span()));
+            }
+            (s, _) => {
+                return Err(Error::new(id.span(), format!("unexpected key {:?}", s)));
+            }
         }
     }
     Ok(())
 }
 
-fn parse_string(t: &TokenTree) -> Result<String> {
-    let tokens = t.to_token_stream().into();
-    let lit = syn::parse::<LitStr>(tokens)?;
-    Ok(lit.value())
+fn parse_arg_attrs(tokens: proc_macro2::TokenStream) -> Result<Arg> {
+    let mut long = Vec::new();
+    let mut short = Vec::new();
+    let mut positional = None;
+
+    let span = tokens.span();
+    let AttrMap(values) = syn::parse2(tokens)?;
+    for (id, v) in values {
+        match (id.to_string().as_str(), v) {
+            ("long", None) => {
+                long.push(None);
+            }
+            ("long", Some(t)) => {
+                long.push(Some(parse_string(&t)?));
+            }
+            ("short", None) => {
+                short.push(None);
+            }
+            ("short", Some(t)) => {
+                short.push(Some(parse_string(&t)?));
+            }
+            ("positional", None) => {
+                err_on_duplicate(positional.is_some(), id.span())?;
+                positional = Some(None);
+            }
+            ("positional", Some(p)) => {
+                err_on_duplicate(positional.is_some(), id.span())?;
+                positional = Some(Some(parse_string(&p)?));
+            }
+            (s, _) => {
+                return Err(Error::new(id.span(), format!("unexpected key {:?}", s)));
+            }
+        }
+    }
+
+    if positional.is_some() && !(long.is_empty() && short.is_empty()) {
+        return Err(Error::new(
+            span,
+            "`arg(positional)` can't be used together with `arg(long)` or `arg(short)`",
+        ));
+    }
+    if let Some(name) = positional {
+        Ok(Arg::Positional { name })
+    } else {
+        Ok(Arg::Named { long, short })
+    }
+}
+
+struct AttrMap(Vec<(Ident, Option<Expr>)>);
+
+impl Parse for AttrMap {
+    fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+        let mut res = Vec::new();
+
+        if input.is_empty() {
+            return Ok(AttrMap(res));
+        }
+
+        let exprs = match input.parse::<syn::Expr>()? {
+            Expr::Paren(p) => {
+                if !p.attrs.is_empty() {
+                    return Err(Error::new(p.span(), "Illegal attribute"));
+                }
+                let mut punct = Punctuated::new();
+                punct.push_value(*p.expr);
+                punct
+            }
+            Expr::Tuple(t) => {
+                if !t.attrs.is_empty() {
+                    return Err(Error::new(t.span(), "Illegal attribute"));
+                }
+                t.elems
+            }
+            expr => return Err(Error::new(expr.span(), "expected parentheses")),
+        };
+
+        for expr in exprs {
+            match expr {
+                Expr::Assign(a) => {
+                    if !a.attrs.is_empty() {
+                        return Err(Error::new(a.span(), "Illegal attribute"));
+                    }
+                    if let Expr::Path(left) = *a.left {
+                        res.push((parse_ident(left)?, Some(*a.right)));
+                    } else {
+                        return Err(Error::new(
+                            a.span(),
+                            "invalid token: expected identifier",
+                        ));
+                    }
+                }
+                Expr::Path(p) => {
+                    res.push((parse_ident(p)?, None));
+                }
+                _ => return Err(Error::new(expr.span(), "unsupported expression")),
+            }
+        }
+
+        Ok(AttrMap(res))
+    }
+}
+
+fn parse_ident(p: ExprPath) -> Result<Ident> {
+    if p.qself.is_none() && p.attrs.is_empty() {
+        if let Some(id) = p.path.get_ident() {
+            return Ok(id.clone());
+        }
+    }
+    Err(Error::new(p.span(), "invalid token: expected identifier"))
+}
+
+fn parse_string(t: &Expr) -> Result<String> {
+    match t {
+        Expr::Lit(ExprLit { lit: Lit::Str(s), .. }) => Ok(s.value()),
+        _ => Err(Error::new(t.span(), "invalid token: expected string literal")),
+    }
+}
+
+fn err_on_duplicate(b: bool, span: Span) -> Result<()> {
+    if b {
+        Err(Error::new(span, "key exists multiple times"))
+    } else {
+        Ok(())
+    }
 }

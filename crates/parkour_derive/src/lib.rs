@@ -13,7 +13,10 @@ mod attrs;
 
 #[proc_macro_derive(FromInputValue)]
 pub fn from_input_value_derive(input: TokenStream) -> TokenStream {
-    let ast: DeriveInput = syn::parse(input).unwrap();
+    let ast: DeriveInput = match syn::parse(input) {
+        Ok(ast) => ast,
+        Err(e) => return e.into_compile_error().into(),
+    };
     let name = &ast.ident;
     let generics = &ast.generics;
 
@@ -75,13 +78,13 @@ fn enum_from_input_value(name: &Ident, e: DataEnum) -> Result<TokenStream> {
             empty_idents.push(v.ident);
         } else if field_len == 1 {
             let var_name = v.ident;
-            let field = v.fields.into_iter().next().unwrap();
+            let field = v.fields.into_iter().next().expect("an enum has no field");
             let field_ty_string = field.ty.to_token_stream().to_string();
             if inner_types_string.contains(&field_ty_string) {
                 return Err(Error::new(
                     field.span(),
-                    "The FromInputValue derive macro doesn't support \
-                    multiple variants with the same type",
+                    "The FromInputValue derive macro doesn't support multiple variants \
+                     with the same type",
                 ));
             }
             inner_types_string.push(field_ty_string);
@@ -95,8 +98,8 @@ fn enum_from_input_value(name: &Ident, e: DataEnum) -> Result<TokenStream> {
         } else {
             return Err(Error::new(
                 v.fields.span(),
-                "The FromInputValue derive macro doesn't support \
-                variants with more than 1 field",
+                "The FromInputValue derive macro doesn't support variants with more \
+                 than 1 field",
             ));
         }
     }
@@ -140,7 +143,10 @@ fn enum_from_input_value(name: &Ident, e: DataEnum) -> Result<TokenStream> {
 
 #[proc_macro_derive(FromInput, attributes(parkour, arg))]
 pub fn from_input_derive(input: TokenStream) -> TokenStream {
-    let ast: DeriveInput = syn::parse(input).unwrap();
+    let ast: DeriveInput = match syn::parse(input) {
+        Ok(ast) => ast,
+        Err(e) => return e.into_compile_error().into(),
+    };
     let name = &ast.ident;
     let generics = &ast.generics;
 
@@ -174,10 +180,10 @@ fn struct_from_input(
 ) -> Result<TokenStream> {
     let attrs = attrs::parse(attr)?;
 
-    let is_main = attrs.contains(&Attr::Parkour(Parkour::Main));
+    let is_main = attrs.iter().any(|(a, _)| matches!(a, Attr::Parkour(Parkour::Main)));
     let mut subcommands: Vec<String> = attrs
         .iter()
-        .filter_map(|a| match a {
+        .filter_map(|(a, _)| match a {
             Attr::Parkour(Parkour::Subcommand(s)) => {
                 Some(s.clone().unwrap_or_else(|| name.to_string().to_lowercase()))
             }
@@ -202,7 +208,7 @@ fn struct_from_input(
         return Err(Error::new(
             Span::call_site(),
             "The FromInput derive macro requires a `parkour(main)` or \
-            `parkour(subcommand)` attribute",
+             `parkour(subcommand)` attribute",
         ));
     }
 
@@ -229,88 +235,111 @@ fn struct_from_input(
 
     for field in s.fields {
         let attrs = attrs::parse(field.attrs)?;
-        let ident = field.ident.unwrap();
+        let ident = field.ident.expect("a field has no ident");
 
         let mut field_str = None;
 
-        let args: Vec<_> = attrs
-            .iter()
-            .filter_map(|a| match a {
-                Attr::Arg(a) => Some(match a {
-                    Arg { long: Some(Some(long)), short: Some(Some(short)) } => {
-                        if field_str.is_none() {
-                            field_str = Some(format!("--{}", long));
+        let mut args = Vec::new();
+        for (attr, span) in attrs {
+            if let Attr::Arg(a) = attr {
+                args.push(match a {
+                    Arg::Named { mut long, mut short } => {
+                        if long.is_empty() && short.is_empty() {
+                            return Err(Error::new(span, "no flags specified"));
                         }
 
-                        quote! { Flag::LongShort(#long, #short).into() }
-                    }
-                    Arg { long: Some(Some(long)), short: Some(None) } => {
-                        let short = long.chars().next().unwrap().to_string();
+                        let ident_str = ident_to_flag_string(&ident);
+
                         if field_str.is_none() {
-                            field_str = Some(format!("--{}", long));
+                            if !long.is_empty() {
+                                let long = long[0].as_deref().unwrap_or(&ident_str);
+                                field_str = Some(format!("--{}", long));
+                            } else {
+                                let short = short[0].as_deref().unwrap_or(&ident_str);
+                                field_str = Some(format!("-{}", short));
+                            }
                         }
 
-                        quote! { Flag::LongShort(#long, #short).into() }
-                    }
-                    Arg { long: Some(Some(long)), short: None } => {
-                        if field_str.is_none() {
-                            field_str = Some(format!("--{}", long));
+                        long.sort_unstable();
+                        short.sort_unstable();
+                        if let Some(w) = long.windows(2).find(|pair| pair[0] == pair[1]) {
+                            return Err(Error::new(
+                                span,
+                                format!(
+                                    "long flag {:?} is specified twice",
+                                    w[0].as_deref().unwrap_or(&ident_str)
+                                ),
+                            ));
+                        }
+                        if let Some(w) = short.windows(2).find(|pair| pair[0] == pair[1])
+                        {
+                            return Err(Error::new(
+                                span,
+                                format!(
+                                    "short flag {:?} is specified twice",
+                                    w[0].as_deref()
+                                        .unwrap_or(first_char(span, &ident_str)?)
+                                ),
+                            ));
                         }
 
-                        quote! { Flag::Long(#long).into() }
+                        match (long.len(), short.len()) {
+                            (1, 1) => {
+                                let long = long[0].as_deref().unwrap_or(&ident_str);
+                                let short = short[0].as_deref().map_or_else(
+                                    || first_char(ident.span(), &long),
+                                    Ok,
+                                )?;
+                                quote! { Flag::LongShort(#long, #short).into() }
+                            }
+                            (0, 1) => {
+                                let short = short[0].as_deref().map_or_else(
+                                    || first_char(ident.span(), &ident_str),
+                                    Ok,
+                                )?;
+                                quote! { Flag::Short(#short).into() }
+                            }
+                            (1, 0) => {
+                                let long = long[0].as_deref().unwrap_or(&ident_str);
+                                quote! { Flag::Long(#long).into() }
+                            }
+                            (_, _) => {
+                                let long: Vec<&str> = long
+                                    .iter()
+                                    .map(|l| l.as_deref().unwrap_or(&ident_str))
+                                    .collect();
+                                let short =
+                                    short.iter().map(|l| l.as_deref().unwrap_or(long[0]));
+
+                                quote! {
+                                    Flag::Many(vec![
+                                        #( Flag::Long(#long), )*
+                                        #( Flag::Short(#short), )*
+                                    ]).into()
+                                }
+                            }
+                        }
                     }
-                    Arg { long: Some(None), short: Some(Some(short)) } => {
-                        let long = ident.to_string();
+
+                    Arg::Positional { name: None } => {
                         if field_str.is_none() {
-                            field_str = Some(format!("--{}", long));
+                            field_str = Some(ident.to_string());
                         }
 
-                        quote! { Flag::LongShort(#long, #short).into() }
+                        quote! { todo!() }
                     }
-                    Arg { long: Some(None), short: Some(None) } => {
-                        let long = ident.to_string();
-                        let short = long.chars().next().unwrap().to_string();
+                    Arg::Positional { name: Some(_p) } => {
                         if field_str.is_none() {
-                            field_str = Some(format!("--{}", long));
+                            field_str = Some(ident.to_string());
                         }
 
-                        quote! { Flag::LongShort(#long, #short).into() }
+                        quote! { todo!() }
                     }
-                    Arg { long: Some(None), short: None } => {
-                        let long = ident.to_string();
-                        if field_str.is_none() {
-                            field_str = Some(format!("--{}", long));
-                        }
-
-                        quote! { Flag::Long(#long).into() }
-                    }
-                    Arg { long: None, short: Some(Some(short)) } => {
-                        if field_str.is_none() {
-                            field_str = Some(format!("-{}", short));
-                        }
-
-                        quote! { Flag::Short(#short).into() }
-                    }
-                    Arg { long: None, short: Some(None) } => {
-                        let i = ident.to_string();
-                        panic!(
-                            "field {} has an implicit short flag, but no long flag. \
-                            Consider naming the flag, e.g. `short = {:?}`",
-                            i,
-                            i.chars().next().unwrap().to_string(),
-                        );
-                    }
-                    Arg { long: None, short: None } => {
-                        panic!(
-                            "field {} has neither a long flag nor a short flag, \
-                            and isn't positional",
-                            ident.to_string()
-                        );
-                    }
-                }),
-                _ => None,
-            })
-            .collect();
+                })
+            } else if let Attr::Parkour(_) = attr {
+                return Err(Error::new(span, "this key is not yet implemented!"));
+            }
+        }
 
         if args.is_empty() {
             return Err(Error::new(
@@ -320,7 +349,7 @@ fn struct_from_input(
         }
         contexts.push(args);
 
-        field_strs.push(field_str.unwrap());
+        field_strs.push(field_str.expect("a field has no string"));
         field_idents.push(ident);
     }
 
@@ -337,8 +366,7 @@ fn struct_from_input(
                     while input.is_not_empty() {
                         #(
                             #(
-                                if SetOnce(&mut #field_idents)
-                                    .apply(input, &#contexts)? {
+                                if SetOnce(&mut #field_idents).apply(input, &#contexts)? {
                                     continue;
                                 }
                             )*
@@ -377,7 +405,7 @@ fn enum_from_input(
     let mut inner_type_ctors = Vec::new();
 
     let attrs = attrs::parse(attrs)?;
-    let is_main = attrs.iter().any(|a| *a == Attr::Parkour(Parkour::Main));
+    let is_main = attrs.iter().any(|(a, _)| matches!(a, Attr::Parkour(Parkour::Main)));
 
     for (i, v) in variants.into_iter().enumerate() {
         let field_len = field_len(&v.fields);
@@ -399,13 +427,13 @@ fn enum_from_input(
             empty_idents.push(v.ident);
         } else if field_len == 1 {
             let var_name = v.ident;
-            let field = v.fields.into_iter().next().unwrap();
+            let field = v.fields.into_iter().next().expect("a variant has no field");
             let field_ty_string = field.ty.to_token_stream().to_string();
             if inner_types_string.contains(&field_ty_string) {
                 return Err(Error::new(
                     field.span(),
-                    "The FromInput derive macro doesn't support \
-                    multiple variants with the same type",
+                    "The FromInput derive macro doesn't support multiple variants with \
+                     the same type",
                 ));
             }
             inner_types_string.push(field_ty_string);
@@ -419,8 +447,8 @@ fn enum_from_input(
         } else {
             return Err(Error::new(
                 v.fields.span(),
-                "The FromInput derive macro doesn't support \
-                variants with more than 1 field",
+                "The FromInput derive macro doesn't support variants with more than 1 \
+                 field",
             ));
         }
     }
@@ -468,4 +496,16 @@ fn field_len(fields: &Fields) -> usize {
         Fields::Unnamed(n) => n.unnamed.len(),
         Fields::Unit => 0,
     }
+}
+
+fn first_char(span: Span, s: &str) -> Result<&str> {
+    match s.char_indices().nth(1) {
+        Some((i, _)) => Ok(&s[0..i]),
+        None if !s.is_empty() => Ok(s),
+        None => Err(Error::new(span, "flag is empty")),
+    }
+}
+
+fn ident_to_flag_string(ident: &Ident) -> String {
+    ident.to_string().trim_matches('_').replace('_', "-")
 }

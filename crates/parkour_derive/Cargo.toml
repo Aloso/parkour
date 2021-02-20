@@ -20,4 +20,4 @@ proc-macro2 = "1.0"
 [dependencies.syn]
 version = "1.0"
 default-features = false
-features = ["derive", "parsing", "printing", "proc-macro"]
+features = ["derive", "parsing", "printing", "proc-macro", "full"]
