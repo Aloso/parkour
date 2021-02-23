@@ -111,6 +111,7 @@ pub fn structs(
     }
 
     let gen = quote! {
+        #[automatically_derived]
         impl parkour::FromInput for #name {
             type Context = ();
 

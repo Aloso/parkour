@@ -4,6 +4,7 @@ use std::mem::ManuallyDrop;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
 
+use crate::help::PossibleValues;
 use crate::{Error, FromInputValue};
 
 impl<T: FromInputValue> FromInputValue for Box<T> {
@@ -15,6 +16,10 @@ impl<T: FromInputValue> FromInputValue for Box<T> {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
     }
 }
 
@@ -28,6 +33,10 @@ impl<T: FromInputValue> FromInputValue for Rc<T> {
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
     }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
+    }
 }
 
 impl<T: FromInputValue> FromInputValue for Arc<T> {
@@ -39,6 +48,10 @@ impl<T: FromInputValue> FromInputValue for Arc<T> {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
     }
 }
 
@@ -52,6 +65,10 @@ impl<T: FromInputValue> FromInputValue for Cell<T> {
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
     }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
+    }
 }
 
 impl<T: FromInputValue> FromInputValue for RefCell<T> {
@@ -63,6 +80,10 @@ impl<T: FromInputValue> FromInputValue for RefCell<T> {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
     }
 }
 
@@ -76,6 +97,10 @@ impl<T: FromInputValue> FromInputValue for UnsafeCell<T> {
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
     }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
+    }
 }
 
 impl<T: FromInputValue> FromInputValue for Mutex<T> {
@@ -87,6 +112,10 @@ impl<T: FromInputValue> FromInputValue for Mutex<T> {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
     }
 }
 
@@ -100,6 +129,10 @@ impl<T: FromInputValue> FromInputValue for RwLock<T> {
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
     }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
+    }
 }
 
 impl<T: FromInputValue> FromInputValue for ManuallyDrop<T> {
@@ -111,6 +144,10 @@ impl<T: FromInputValue> FromInputValue for ManuallyDrop<T> {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         T::allow_leading_dashes(context)
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(context)
     }
 }
 
@@ -127,5 +164,9 @@ where
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         <T::Owned as FromInputValue>::allow_leading_dashes(context)
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        <T::Owned as FromInputValue>::possible_values(context)
     }
 }

@@ -17,41 +17,64 @@ pub fn enums(name: &Ident, e: DataEnum) -> Result<TokenStream> {
 
     let empty_idents = utils::get_empty_variant_idents(&variants);
     let empty_ident_strs = utils::get_lowercase_ident_strs(&empty_idents);
-    let ident_strs_concat = utils::concat_strings_human_readable(&empty_ident_strs);
     let (inner_types, inner_type_ctors) = utils::get_variant_types_and_ctors(&variants)?;
 
-    let gen = quote! {
-        impl parkour::FromInputValue for #name {
-            type Context = ();
-
-            fn from_input_value(value: &str, _: &Self::Context) -> parkour::Result<Self> {
-                match value {
+    let from_input_value = quote! {
+        fn from_input_value(value: &str, context: &Self::Context) -> parkour::Result<Self> {
+            match value {
+                #(
+                    v if v.eq_ignore_ascii_case(#empty_ident_strs) =>
+                        Ok(#name::#empty_idents {}),
+                )*
+                v => {
+                    #[allow(unused_mut)]
+                    let mut source = None::<parkour::Error>;
                     #(
-                        v if v.eq_ignore_ascii_case(#empty_ident_strs) =>
-                            Ok(#name::#empty_idents {}),
-                    )*
-                    v => {
-                        #[allow(unused_mut)]
-                        let mut source = None::<parkour::Error>;
-                        #(
-                            match <#inner_types>::from_input_value(value, &Default::default()) {
-                                Ok(__v) => return Ok( #name::#inner_type_ctors ),
-                                Err(e) if e.is_no_value() => {},
-                                Err(e) => {
-                                    source = Some(e);
-                                },
-                            }
-                        )*
-                        match source {
-                            Some(s) => Err(
-                                parkour::Error::unexpected_value(v, #ident_strs_concat)
-                                    .with_source(s),
-                            ),
-                            None => Err(parkour::Error::unexpected_value(v, #ident_strs_concat)),
+                        match <#inner_types>::from_input_value(value, &Default::default()) {
+                            Ok(__v) => return Ok( #name::#inner_type_ctors ),
+                            Err(e) if e.is_no_value() => {},
+                            Err(e) => {
+                                source = Some(e);
+                            },
                         }
+                    )*
+                    match source {
+                        Some(s) => Err(
+                            parkour::Error::unexpected_value(v, Self::possible_values(context))
+                                .with_source(s),
+                        ),
+                        None => Err(parkour::Error::unexpected_value(v, Self::possible_values(context))),
                     }
                 }
             }
+        }
+    };
+
+    let possible_values = quote! {
+        #[allow(unused_mut)]
+        fn possible_values(context: &Self::Context) -> Option<parkour::help::PossibleValues> {
+            let mut values = vec![
+                #(
+                    parkour::help::PossibleValues::String(#empty_ident_strs.to_string())
+                ),*
+            ];
+            #(
+                if let Some(v) = <#inner_types as parkour::FromInputValue>::possible_values(context) {
+                    values.push(v);
+                }
+            ),*
+            Some(parkour::help::PossibleValues::OneOf(values))
+        }
+    };
+
+    let gen = quote! {
+        #[automatically_derived]
+        impl parkour::FromInputValue for #name {
+            type Context = ();
+
+            #from_input_value
+
+            #possible_values
         }
     };
     Ok(gen)

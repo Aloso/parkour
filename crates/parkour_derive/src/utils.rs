@@ -43,22 +43,6 @@ pub fn ident_to_flag_string(ident: &Ident) -> String {
     ident.to_string().trim_matches('_').replace('_', "-")
 }
 
-pub fn concat_strings_human_readable(idents: &[String]) -> String {
-    let mut result = String::new();
-    let len = idents.len();
-    for (i, s) in idents.iter().enumerate() {
-        if i != 0 {
-            if i < len - 1 {
-                result.push_str(", ");
-            } else {
-                result.push_str(" or ");
-            }
-        }
-        result.push_str(&s);
-    }
-    result
-}
-
 pub fn get_empty_variant_idents(variants: &[Variant]) -> Vec<&Ident> {
     variants.iter().filter(|&v| field_len(&v.fields) == 0).map(|v| &v.ident).collect()
 }

@@ -1,3 +1,4 @@
+use crate::help::PossibleValues;
 use crate::util::{ArgCtx, Flag};
 use crate::{Error, Parse};
 
@@ -8,6 +9,8 @@ use crate::{Error, Parse};
 ///
 /// ```
 /// # use parkour::prelude::*;
+/// use parkour::help::PossibleValues;
+///
 /// // The struct we want to crate from a positional number argument
 /// struct Foo(usize);
 ///
@@ -24,9 +27,15 @@ use crate::{Error, Parse};
 ///         let num: usize = input.parse_value(&Default::default())?;
 ///
 ///         if context.even && num % 2 != 0 {
-///             Err(parkour::Error::unexpected_value(num, "even number"))
+///             Err(parkour::Error::unexpected_value(
+///                 num,
+///                 Some(PossibleValues::Other("even number".into())),
+///             ))
 ///         } else if !context.even && num % 2 == 0 {
-///             Err(parkour::Error::unexpected_value(num, "odd number"))
+///             Err(parkour::Error::unexpected_value(
+///                 num,
+///                 Some(PossibleValues::Other("odd number".into())),
+///             ))
 ///         } else {
 ///             Ok(Foo(num))
 ///         }
@@ -98,6 +107,9 @@ pub trait FromInputValue: Sized {
     fn allow_leading_dashes(_context: &Self::Context) -> bool {
         false
     }
+
+    /// Returns a list or short description of all the accepted values
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues>;
 }
 
 impl<T: FromInputValue> FromInput for T {

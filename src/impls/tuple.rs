@@ -1,3 +1,4 @@
+use crate::help::PossibleValues;
 use crate::{Error, ErrorInner, FromInputValue};
 
 #[derive(Debug)]
@@ -34,6 +35,14 @@ macro_rules! impl_tuple {
                 )*
 
                 Ok(($( $v ),* ,))
+            }
+
+            fn allow_leading_dashes(context: &Self::Context) -> bool {
+                T1::allow_leading_dashes(&context.inner.0)
+            }
+
+            fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+                T1::possible_values(&context.inner.0)
             }
         }
     };

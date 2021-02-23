@@ -30,6 +30,7 @@ pub fn enums(name: &Ident, e: DataEnum, attrs: Vec<Attribute>) -> Result<TokenSt
     };
 
     let gen = quote! {
+        #[automatically_derived]
         impl parkour::FromInput for #name {
             type Context = ();
 

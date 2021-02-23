@@ -316,6 +316,7 @@ pub use parkour_derive::{FromInput, FromInputValue};
 pub mod actions;
 mod error;
 mod from_input;
+pub mod help;
 pub mod impls;
 mod parse;
 pub mod util;

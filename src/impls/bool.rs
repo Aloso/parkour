@@ -1,19 +1,27 @@
+use crate::help::PossibleValues;
 use crate::{Error, FromInputValue};
 
 impl FromInputValue for bool {
     type Context = ();
 
-    fn from_input_value(value: &str, _: &()) -> Result<Self, Error> {
-        Ok(match value {
-            "1" => true,
-            "0" => false,
-            s if s.eq_ignore_ascii_case("y") => true,
-            s if s.eq_ignore_ascii_case("n") => false,
-            s if s.eq_ignore_ascii_case("yes") => true,
-            s if s.eq_ignore_ascii_case("no") => false,
-            s if s.eq_ignore_ascii_case("true") => true,
-            s if s.eq_ignore_ascii_case("false") => false,
-            _ => return Err(Error::unexpected_value(value, "y/n")),
-        })
+    fn from_input_value(value: &str, context: &()) -> Result<Self, Error> {
+        match value {
+            "1" => Ok(true),
+            "0" => Ok(false),
+            s if s.eq_ignore_ascii_case("y") => Ok(true),
+            s if s.eq_ignore_ascii_case("n") => Ok(false),
+            s if s.eq_ignore_ascii_case("yes") => Ok(true),
+            s if s.eq_ignore_ascii_case("no") => Ok(false),
+            s if s.eq_ignore_ascii_case("true") => Ok(true),
+            s if s.eq_ignore_ascii_case("false") => Ok(false),
+            _ => Err(Error::unexpected_value(value, Self::possible_values(context))),
+        }
+    }
+
+    fn possible_values(_: &Self::Context) -> Option<PossibleValues> {
+        Some(PossibleValues::OneOf(vec![
+            PossibleValues::String("yes".into()),
+            PossibleValues::String("no".into()),
+        ]))
     }
 }

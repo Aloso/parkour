@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+use crate::help::PossibleValues;
 use crate::{Error, FromInputValue};
 
 /// The parsing context for strings
@@ -41,10 +42,7 @@ impl FromInputValue for String {
         if value.len() < context.min_length || value.len() > context.max_length {
             Err(Error::unexpected_value(
                 format!("string with length {}", value.len()),
-                format!(
-                    "length between {} and {}",
-                    context.min_length, context.max_length,
-                ),
+                Self::possible_values(context),
             ))
         } else {
             Ok(value.to_string())
@@ -53,6 +51,16 @@ impl FromInputValue for String {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         context.allow_leading_dashes
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        Some(PossibleValues::Other(match (context.min_length, context.max_length) {
+            (0, usize::MAX) => "string".into(),
+            (1, usize::MAX) => "non-empty string".into(),
+            (min, usize::MAX) => format!("string with at least {} bytes", min),
+            (0, max) => format!("string with at most {} bytes", max),
+            (min, max) => format!("string with {} to {} bytes", min, max),
+        }))
     }
 }
 
@@ -63,10 +71,7 @@ impl FromInputValue for OsString {
         if value.len() < context.min_length || value.len() > context.max_length {
             Err(Error::unexpected_value(
                 format!("string with length {}", value.len()),
-                format!(
-                    "length between {} and {}",
-                    context.min_length, context.max_length,
-                ),
+                Self::possible_values(context),
             ))
         } else {
             Ok(value.into())
@@ -75,6 +80,16 @@ impl FromInputValue for OsString {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         context.allow_leading_dashes
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        Some(PossibleValues::Other(match (context.min_length, context.max_length) {
+            (0, usize::MAX) => "string".into(),
+            (1, usize::MAX) => "non-empty string".into(),
+            (min, usize::MAX) => format!("string with at least {} bytes", min),
+            (0, max) => format!("string with at most {} bytes", max),
+            (min, max) => format!("string with {} to {} bytes", min, max),
+        }))
     }
 }
 
@@ -85,10 +100,7 @@ impl FromInputValue for PathBuf {
         if value.len() < context.min_length || value.len() > context.max_length {
             Err(Error::unexpected_value(
                 format!("string with length {}", value.len()),
-                format!(
-                    "length between {} and {}",
-                    context.min_length, context.max_length,
-                ),
+                Self::possible_values(context),
             ))
         } else {
             Ok(value.into())
@@ -97,6 +109,16 @@ impl FromInputValue for PathBuf {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         context.allow_leading_dashes
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        Some(PossibleValues::Other(match (context.min_length, context.max_length) {
+            (0, usize::MAX) => "path".into(),
+            (1, usize::MAX) => "non-empty path".into(),
+            (min, usize::MAX) => format!("path with at least {} bytes", min),
+            (0, max) => format!("path with at most {} bytes", max),
+            (min, max) => format!("path with {} to {} bytes", min, max),
+        }))
     }
 }
 
@@ -107,10 +129,7 @@ impl FromInputValue for Cow<'static, str> {
         if value.len() < context.min_length || value.len() > context.max_length {
             Err(Error::unexpected_value(
                 format!("string with length {}", value.len()),
-                format!(
-                    "length between {} and {}",
-                    context.min_length, context.max_length,
-                ),
+                Self::possible_values(context),
             ))
         } else {
             Ok(Cow::Owned(value.into()))
@@ -119,5 +138,15 @@ impl FromInputValue for Cow<'static, str> {
 
     fn allow_leading_dashes(context: &Self::Context) -> bool {
         context.allow_leading_dashes
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        Some(PossibleValues::Other(match (context.min_length, context.max_length) {
+            (0, usize::MAX) => "string".into(),
+            (1, usize::MAX) => "non-empty string".into(),
+            (min, usize::MAX) => format!("string with at least {} bytes", min),
+            (0, max) => format!("string with at most {} bytes", max),
+            (min, max) => format!("string with {} to {} bytes", min, max),
+        }))
     }
 }

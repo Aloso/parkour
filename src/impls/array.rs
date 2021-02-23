@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 
+use crate::help::PossibleValues;
 use crate::{Error, ErrorInner, FromInputValue};
 
 #[derive(Debug)]
@@ -40,6 +41,10 @@ impl<T: FromInputValue, const N: usize> FromInputValue for [T; N] {
         } else {
             Err(ErrorInner::WrongNumberOfValues { expected: N, got: 1 }.into())
         }
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(&context.inner)
     }
 }
 

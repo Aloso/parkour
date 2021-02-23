@@ -1,5 +1,6 @@
 use std::num::*;
 
+use crate::help::PossibleValues;
 use crate::{Error, FromInputValue};
 
 /// The parsing context for numeric types.
@@ -11,14 +12,16 @@ pub struct NumberCtx<T> {
     pub max: T,
 }
 
-impl<T: Copy + PartialOrd + std::fmt::Display> NumberCtx<T> {
+impl<T: Copy + PartialOrd + FromInputValue<Context = Self> + std::fmt::Display>
+    NumberCtx<T>
+{
     fn must_include(&self, n: T) -> Result<T, Error> {
         if n >= self.min && n <= self.max {
             Ok(n)
         } else {
             Err(Error::unexpected_value(
                 format!("number {}", n),
-                format!("number between {} and {}", self.min, self.max),
+                T::possible_values(self),
             ))
         }
     }
@@ -49,6 +52,17 @@ macro_rules! from_input_value {
                 fn allow_leading_dashes(context: &Self::Context) -> bool {
                     context.min.is_negative()
                 }
+
+                fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+                    Some(PossibleValues::Other(
+                        match (context.min, context.max) {
+                            ($t::MIN, $t::MAX) => "integer".into(),
+                            ($t::MIN, max) => format!("integer at most {}", max),
+                            (min, $t::MAX) => format!("integer at least {}", min),
+                            (min, max) => format!("integer between {} and {}", min, max),
+                        }
+                    ))
+                }
             }
         )*
     };
@@ -64,6 +78,12 @@ macro_rules! from_input_value {
                 fn allow_leading_dashes(context: &Self::Context) -> bool {
                     context.min.get().is_negative()
                 }
+
+                fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+                    Some(PossibleValues::Other(
+                        format!("integer between {} and {}", context.min, context.max),
+                    ))
+                }
             }
         )*
     };
@@ -77,6 +97,12 @@ macro_rules! from_input_value {
                 }
 
                 fn allow_leading_dashes(_: &Self::Context) -> bool { false }
+
+                fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+                    Some(PossibleValues::Other(
+                        format!("integer between {} and {}", context.min, context.max),
+                    ))
+                }
             }
         )*
     };
@@ -91,6 +117,17 @@ macro_rules! from_input_value {
 
                 fn allow_leading_dashes(context: &Self::Context) -> bool {
                     context.min.is_sign_negative()
+                }
+
+                fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+                    Some(PossibleValues::Other(
+                        match (context.min, context.max) {
+                            (min, max) if min == $t::MIN && max == $t::MAX => "number".into(),
+                            (min, max) if min == $t::MIN => format!("number at most {}", max),
+                            (min, max) if max == $t::MAX => format!("number at least {}", min),
+                            (min, max) => format!("number between {} and {}", min, max),
+                        }
+                    ))
                 }
             }
         )*

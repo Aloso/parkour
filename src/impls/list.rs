@@ -1,6 +1,7 @@
 use std::collections::{BTreeSet, HashSet, LinkedList, VecDeque};
 use std::hash::Hash;
 
+use crate::help::PossibleValues;
 use crate::{Error, ErrorInner, FromInputValue};
 
 /// The parsing context for list-like types. This is used by the following types
@@ -106,6 +107,10 @@ impl<T: FromInputValue<Context = C>, C> FromInputValue for Vec<T> {
             Ok(vec![T::from_input_value(value, &context.inner)?])
         }
     }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(&context.inner)
+    }
 }
 
 /*
@@ -161,6 +166,10 @@ impl<T: FromInputValue<Context = C>, C> FromInputValue for VecDeque<T> {
             Ok(vec_deque)
         }
     }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(&context.inner)
+    }
 }
 
 /*
@@ -215,6 +224,10 @@ impl<T: FromInputValue<Context = C>, C> FromInputValue for LinkedList<T> {
             list.push_back(T::from_input_value(value, &context.inner)?);
             Ok(list)
         }
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(&context.inner)
     }
 }
 
@@ -273,6 +286,10 @@ impl<T: FromInputValue<Context = C> + Ord, C> FromInputValue for BTreeSet<T> {
             Ok(vec_deque)
         }
     }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(&context.inner)
+    }
 }
 
 /*
@@ -329,5 +346,9 @@ impl<T: FromInputValue<Context = C> + Hash + Eq, C> FromInputValue for HashSet<T
             vec_deque.insert(T::from_input_value(value, &context.inner)?);
             Ok(vec_deque)
         }
+    }
+
+    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
+        T::possible_values(&context.inner)
     }
 }

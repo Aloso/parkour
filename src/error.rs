@@ -1,6 +1,7 @@
 use std::fmt;
 use std::num::{ParseFloatError, ParseIntError};
 
+use crate::help::PossibleValues;
 use crate::util::Flag;
 
 /// The error type when parsing command-line arguments. You can create an
@@ -69,12 +70,11 @@ impl Error {
     }
 
     /// Create a `UnexpectedValue` error
-    pub fn unexpected_value(got: impl ToString, expected: impl ToString) -> Self {
-        ErrorInner::UnexpectedValue {
-            got: got.to_string(),
-            expected: expected.to_string(),
-        }
-        .into()
+    pub fn unexpected_value(
+        got: impl ToString,
+        expected: Option<PossibleValues>,
+    ) -> Self {
+        ErrorInner::UnexpectedValue { got: got.to_string(), expected }.into()
     }
 
     /// Create a `MissingArgument` error
@@ -90,6 +90,11 @@ impl Error {
     /// Create a `InSubcommand` error
     pub fn in_subcommand(cmd: impl ToString) -> Self {
         ErrorInner::InSubcommand(cmd.to_string()).into()
+    }
+
+    /// Create a `TooManyArgOccurrences` error
+    pub fn too_many_arg_occurrences(arg: impl ToString, max: Option<u32>) -> Self {
+        ErrorInner::TooManyArgOccurrences { arg: arg.to_string(), max }.into()
     }
 }
 
@@ -130,7 +135,7 @@ pub enum ErrorInner {
         got: String,
         /// The expectation that was violated. For example, this string can
         /// contain a list of accepted values.
-        expected: String,
+        expected: Option<PossibleValues>,
     },
 
     /// The parsed list contains more items than allowed
@@ -210,12 +215,16 @@ impl fmt::Display for Error {
                 write!(f, "in subcommand {}", cmd.escape_debug())
             }
             ErrorInner::UnexpectedValue { expected, got } => {
-                write!(
-                    f,
-                    "unexpected value `{}`, expected {}",
-                    got.escape_debug(),
-                    expected.escape_debug()
-                )
+                if let Some(expected) = expected {
+                    write!(
+                        f,
+                        "unexpected value `{}`, expected {}",
+                        got.escape_debug(),
+                        expected,
+                    )
+                } else {
+                    write!(f, "unexpected value `{}`", got.escape_debug())
+                }
             }
             ErrorInner::UnexpectedArgument { arg } => {
                 write!(f, "unexpected argument `{}`", arg.escape_debug())
