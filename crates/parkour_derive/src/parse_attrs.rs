@@ -1,18 +1,18 @@
 use proc_macro2::TokenStream;
-use syn::parse::Parse;
+use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{Expr, ExprPath, Ident, Result};
 
-pub fn parse(tokens: TokenStream) -> Result<Vec<(Ident, Option<Expr>)>> {
-    let AttrMap(values) = syn::parse2(tokens)?;
+pub fn parse(tokens: &TokenStream) -> Result<Vec<(Ident, Option<Expr>)>> {
+    let AttrMap(values) = syn::parse2(tokens.clone())?;
     Ok(values)
 }
 
 struct AttrMap(Vec<(Ident, Option<Expr>)>);
 
 impl Parse for AttrMap {
-    fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> Result<Self> {
         let mut res = Vec::new();
 
         if input.is_empty() {

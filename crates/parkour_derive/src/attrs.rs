@@ -1,4 +1,4 @@
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 use syn::spanned::Spanned;
 use syn::{Attribute, Expr, ExprLit, Lit, Result};
 
@@ -21,25 +21,22 @@ pub enum Arg {
     Positional { name: Option<String> },
 }
 
-pub fn parse(attrs: Vec<Attribute>) -> Result<Vec<(Attr, Span)>> {
+pub fn parse(attrs: &[Attribute]) -> Result<Vec<(Attr, Span)>> {
     let mut result = Vec::new();
 
     for a in attrs {
         if let Some(ident) = a.path.get_ident() {
             if *ident == "parkour" {
-                parse_parkour_attrs(a.tokens, &mut result)?;
+                parse_parkour_attrs(&a.tokens, &mut result)?;
             } else if *ident == "arg" {
-                result.push((Attr::Arg(parse_arg_attrs(a.tokens)?), ident.span()));
+                result.push((Attr::Arg(parse_arg_attrs(&a.tokens)?), ident.span()));
             }
         }
     }
     Ok(result)
 }
 
-fn parse_parkour_attrs(
-    tokens: proc_macro2::TokenStream,
-    buf: &mut Vec<(Attr, Span)>,
-) -> Result<()> {
+fn parse_parkour_attrs(tokens: &TokenStream, buf: &mut Vec<(Attr, Span)>) -> Result<()> {
     let values = parse_attrs::parse(tokens)?;
 
     for (id, v) in values {
@@ -66,7 +63,7 @@ fn parse_parkour_attrs(
     Ok(())
 }
 
-fn parse_arg_attrs(tokens: proc_macro2::TokenStream) -> Result<Arg> {
+fn parse_arg_attrs(tokens: &TokenStream) -> Result<Arg> {
     let mut long = Vec::new();
     let mut short = Vec::new();
     let mut positional = None;

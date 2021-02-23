@@ -10,30 +10,17 @@ pub fn structs(
     s: syn::DataStruct,
     attr: Vec<Attribute>,
 ) -> Result<TokenStream> {
-    let attrs = attrs::parse(attr)?;
+    let attrs = attrs::parse(&attr)?;
+
+    let subcommands = get_subcommand_names(&attrs, name)?;
 
     let is_main = attrs.iter().any(|(a, _)| matches!(a, Attr::Parkour(Parkour::Main)));
-    let mut subcommands: Vec<String> = attrs
-        .iter()
-        .filter_map(|(a, _)| match a {
-            Attr::Parkour(Parkour::Subcommand(s)) => {
-                Some(s.clone().unwrap_or_else(|| name.to_string().to_lowercase()))
-            }
-            _ => None,
-        })
-        .collect();
-    subcommands.sort_unstable();
-    if let Some(w) = subcommands.windows(2).find(|pair| pair[0] == pair[1]) {
-        bail!(Span::call_site(), "subcommand {:?} is specified twice", w[0]);
-    }
-
     if is_main && !subcommands.is_empty() {
         bail!(
             Span::call_site(),
             "`parkour(main)` and `parkour(subcommand)` can't be combined",
         );
-    }
-    if !is_main && subcommands.is_empty() {
+    } else if !is_main && subcommands.is_empty() {
         bail!(
             Span::call_site(),
             "The FromInput derive macro requires a `parkour(main)` or \
@@ -62,9 +49,9 @@ pub fn structs(
     let mut field_strs = Vec::new();
     let mut contexts = Vec::new();
 
-    for field in s.fields {
-        let attrs = attrs::parse(field.attrs)?;
-        let ident = field.ident.expect("a field has no ident");
+    for field in &s.fields {
+        let attrs = attrs::parse(&field.attrs)?;
+        let ident = field.ident.as_ref().expect("a field has no ident");
 
         let mut field_str = None;
 
@@ -89,60 +76,9 @@ pub fn structs(
                             }
                         }
 
-                        long.sort_unstable();
-                        short.sort_unstable();
-                        if let Some(w) = long.windows(2).find(|pair| pair[0] == pair[1]) {
-                            bail!(
-                                span,
-                                "long flag {:?} is specified twice",
-                                w[0].as_deref().unwrap_or(&ident_str),
-                            );
-                        }
-                        if let Some(w) = short.windows(2).find(|pair| pair[0] == pair[1])
-                        {
-                            bail!(
-                                span,
-                                "short flag {:?} is specified twice",
-                                w[0].as_deref().unwrap_or(utils::first_char(span, &ident_str)?),
-                            );
-                        }
+                        check_flag_duplicates(span, &ident_str, &mut long, &mut short)?;
 
-                        match (long.len(), short.len()) {
-                            (1, 1) => {
-                                let long = long[0].as_deref().unwrap_or(&ident_str);
-                                let short = short[0].as_deref().map_or_else(
-                                    || utils::first_char(ident.span(), &long),
-                                    Ok,
-                                )?;
-                                quote! { parkour::util::Flag::LongShort(#long, #short).into() }
-                            }
-                            (0, 1) => {
-                                let short = short[0].as_deref().map_or_else(
-                                    || utils::first_char(ident.span(), &ident_str),
-                                    Ok,
-                                )?;
-                                quote! { parkour::util::Flag::Short(#short).into() }
-                            }
-                            (1, 0) => {
-                                let long = long[0].as_deref().unwrap_or(&ident_str);
-                                quote! { parkour::util::Flag::Long(#long).into() }
-                            }
-                            (_, _) => {
-                                let long: Vec<&str> = long
-                                    .iter()
-                                    .map(|l| l.as_deref().unwrap_or(&ident_str))
-                                    .collect();
-                                let short =
-                                    short.iter().map(|l| l.as_deref().unwrap_or(long[0]));
-
-                                quote! {
-                                    parkour::util::Flag::Many(vec![
-                                        #( parkour::util::Flag::Long(#long), )*
-                                        #( parkour::util::Flag::Short(#short), )*
-                                    ]).into()
-                                }
-                            }
-                        }
+                        generate_flag_context(&long, &short, &ident_str, ident)?
                     }
 
                     Arg::Positional { name: None } => {
@@ -207,4 +143,87 @@ pub fn structs(
         }
     };
     Ok(gen)
+}
+
+fn generate_flag_context(
+    long: &[Option<String>],
+    short: &[Option<String>],
+    ident_str: &str,
+    ident: &Ident,
+) -> Result<TokenStream> {
+    Ok(match (long.len(), short.len()) {
+        (1, 1) => {
+            let long = long[0].as_deref().unwrap_or(&ident_str);
+            let short = short[0]
+                .as_deref()
+                .map_or_else(|| utils::first_char(ident.span(), &long), Ok)?;
+            quote! { parkour::util::Flag::LongShort(#long, #short).into() }
+        }
+        (0, 1) => {
+            let short = short[0]
+                .as_deref()
+                .map_or_else(|| utils::first_char(ident.span(), &ident_str), Ok)?;
+            quote! { parkour::util::Flag::Short(#short).into() }
+        }
+        (1, 0) => {
+            let long = long[0].as_deref().unwrap_or(&ident_str);
+            quote! { parkour::util::Flag::Long(#long).into() }
+        }
+        (_, _) => {
+            let long: Vec<&str> =
+                long.iter().map(|l| l.as_deref().unwrap_or(&ident_str)).collect();
+            let short = short.iter().map(|l| l.as_deref().unwrap_or(long[0]));
+
+            quote! {
+                parkour::util::Flag::Many(vec![
+                    #( parkour::util::Flag::Long(#long), )*
+                    #( parkour::util::Flag::Short(#short), )*
+                ]).into()
+            }
+        }
+    })
+}
+
+fn check_flag_duplicates(
+    span: Span,
+    ident_str: &str,
+    long: &mut Vec<Option<String>>,
+    short: &mut Vec<Option<String>>,
+) -> Result<()> {
+    long.sort_unstable();
+    short.sort_unstable();
+
+    if let Some(w) = long.windows(2).find(|pair| pair[0] == pair[1]) {
+        bail!(
+            span,
+            "long flag {:?} is specified twice",
+            w[0].as_deref().unwrap_or(&ident_str),
+        );
+    }
+    if let Some(w) = short.windows(2).find(|pair| pair[0] == pair[1]) {
+        bail!(
+            span,
+            "short flag {:?} is specified twice",
+            w[0].as_deref().unwrap_or(utils::first_char(span, &ident_str)?),
+        );
+    }
+    Ok(())
+}
+
+fn get_subcommand_names(attrs: &[(Attr, Span)], name: &Ident) -> Result<Vec<String>> {
+    let mut subcommands: Vec<String> = attrs
+        .iter()
+        .filter_map(|(a, _)| match a {
+            Attr::Parkour(Parkour::Subcommand(s)) => {
+                Some(s.clone().unwrap_or_else(|| name.to_string().to_lowercase()))
+            }
+            _ => None,
+        })
+        .collect();
+    subcommands.sort_unstable();
+
+    if let Some(w) = subcommands.windows(2).find(|&pair| pair[0] == pair[1]) {
+        bail!(Span::call_site(), "subcommand {:?} is specified twice", w[0]);
+    }
+    Ok(subcommands)
 }
