@@ -86,7 +86,7 @@
 //! impl FromInput for Show {
 //!     type Context = ();
 //!
-//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
 //!         if input.parse_command("show") {
 //!             let mut pos1 = None;
 //!             let mut color_space = None;
@@ -158,7 +158,7 @@
 //! # }
 //! # impl FromInput for Show {
 //! #     type Context = ();
-//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
 //! #         todo!()
 //! #     }
 //! # }
@@ -171,7 +171,7 @@
 //! impl FromInput for Command {
 //!     type Context = ();
 //!
-//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
 //!         // discard the first argument, which is the path to the executable
 //!         input.bump_argument().unwrap();
 //!
@@ -204,7 +204,7 @@
 //! # }
 //! # impl FromInput for Command {
 //! #     type Context = ();
-//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
 //! #         Ok(Command { color: None, show: None })
 //! #     }
 //! # }
@@ -319,6 +319,9 @@ mod from_input;
 pub mod impls;
 mod parse;
 pub mod util;
+
+/// A parkour result.
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Create a new instance of the [`Parse`] trait, which can be used to parse the
 /// command-line arguments of the program.
