@@ -19,18 +19,28 @@ pub fn enums(name: &Ident, e: DataEnum) -> Result<TokenStream> {
     let empty_ident_strs = utils::get_lowercase_ident_strs(&empty_idents);
     let (inner_types, inner_type_ctors) = utils::get_variant_types_and_ctors(&variants)?;
 
+    let empty_ident_comparisons = empty_ident_strs.iter().map(|s| {
+        if s.chars().all(|c| c.is_ascii()) {
+            quote! { v if v.eq_ignore_ascii_case(#s) }
+        } else {
+            quote! { v if v.to_lowercase() == #s }
+        }
+    });
+
     let from_input_value = quote! {
         fn from_input_value(value: &str, context: &Self::Context) -> parkour::Result<Self> {
             match value {
                 #(
-                    v if v.eq_ignore_ascii_case(#empty_ident_strs) =>
-                        Ok(#name::#empty_idents {}),
+                    #empty_ident_comparisons => Ok(#name::#empty_idents {}),
                 )*
                 v => {
                     #[allow(unused_mut)]
                     let mut source = None::<parkour::Error>;
                     #(
-                        match <#inner_types>::from_input_value(value, &Default::default()) {
+                        match <#inner_types as parkour::FromInputValue>::from_input_value(
+                            value,
+                            &Default::default()
+                        ) {
                             Ok(__v) => return Ok( #name::#inner_type_ctors ),
                             Err(e) if e.is_no_value() => {},
                             Err(e) => {

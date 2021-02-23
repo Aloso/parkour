@@ -124,7 +124,9 @@ pub fn structs(
                     while input.is_not_empty() {
                         #(
                             #(
-                                if SetOnce(&mut #field_idents).apply(input, &#contexts)? {
+                                if parkour::actions::SetOnce(&mut #field_idents)
+                                    .apply(input, &#contexts)?
+                                {
                                     continue;
                                 }
                             )*
@@ -134,7 +136,9 @@ pub fn structs(
                     }
                     Ok(#name {
                         #(
-                            #field_idents: #field_idents.ok_or_else(|| parkour::Error::missing_argument(#field_strs))?,
+                            #field_idents: #field_idents.ok_or_else(|| {
+                                parkour::Error::missing_argument(#field_strs)
+                            })?,
                         )*
                     })
                 } else {

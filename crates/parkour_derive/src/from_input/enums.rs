@@ -46,7 +46,7 @@ pub fn enums(name: &Ident, e: DataEnum, attrs: Vec<Attribute>) -> Result<TokenSt
                 )*
 
                 #(
-                    match <#inner_types>::from_input(input, &Default::default()) {
+                    match <#inner_types as parkour::FromInput>::from_input(input, &Default::default()) {
                         Ok(__v) => return Ok( #name::#inner_type_ctors ),
                         Err(e) if e.is_no_value() => {},
                         Err(e) => {
