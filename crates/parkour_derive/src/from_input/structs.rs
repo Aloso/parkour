@@ -112,7 +112,7 @@ pub fn structs(
 
     let gen = quote! {
         #[automatically_derived]
-        impl parkour::FromInput for #name {
+        impl parkour::FromInput<'static> for #name {
             type Context = ();
 
             fn from_input<P: parkour::Parse>(input: &mut P, _: &Self::Context)

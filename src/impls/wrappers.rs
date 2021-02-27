@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use crate::help::PossibleValues;
 use crate::{Error, FromInputValue};
 
-impl<T: FromInputValue> FromInputValue for Box<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for Box<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -23,7 +23,7 @@ impl<T: FromInputValue> FromInputValue for Box<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for Rc<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for Rc<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -39,7 +39,7 @@ impl<T: FromInputValue> FromInputValue for Rc<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for Arc<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for Arc<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -55,7 +55,7 @@ impl<T: FromInputValue> FromInputValue for Arc<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for Cell<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for Cell<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -71,7 +71,7 @@ impl<T: FromInputValue> FromInputValue for Cell<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for RefCell<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for RefCell<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -87,7 +87,7 @@ impl<T: FromInputValue> FromInputValue for RefCell<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for UnsafeCell<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for UnsafeCell<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -103,7 +103,7 @@ impl<T: FromInputValue> FromInputValue for UnsafeCell<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for Mutex<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for Mutex<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -119,7 +119,7 @@ impl<T: FromInputValue> FromInputValue for Mutex<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for RwLock<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for RwLock<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -135,7 +135,7 @@ impl<T: FromInputValue> FromInputValue for RwLock<T> {
     }
 }
 
-impl<T: FromInputValue> FromInputValue for ManuallyDrop<T> {
+impl<'a, T: FromInputValue<'a>> FromInputValue<'a> for ManuallyDrop<T> {
     type Context = T::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -151,11 +151,11 @@ impl<T: FromInputValue> FromInputValue for ManuallyDrop<T> {
     }
 }
 
-impl<T: ToOwned> FromInputValue for Cow<'static, T>
+impl<'a, T: ToOwned> FromInputValue<'a> for Cow<'static, T>
 where
-    T::Owned: FromInputValue,
+    T::Owned: FromInputValue<'a>,
 {
-    type Context = <T::Owned as FromInputValue>::Context;
+    type Context = <T::Owned as FromInputValue<'a>>::Context;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
         let v = <T::Owned as FromInputValue>::from_input_value(value, context)?;

@@ -66,7 +66,7 @@ pub struct SetPositional<'a, T>(pub &'a mut T);
 /// Like [`Set`], but works for subcommands.
 pub struct SetSubcommand<'a, T>(pub &'a mut T);
 
-impl<T: FromInputValue> Action<T::Context> for SetPositional<'_, T> {
+impl<'a, T: FromInputValue<'a>> Action<T::Context> for SetPositional<'_, T> {
     fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {
         if let Some(s) = input.try_parse_value(context)? {
             *self.0 = s;
@@ -77,7 +77,7 @@ impl<T: FromInputValue> Action<T::Context> for SetPositional<'_, T> {
     }
 }
 
-impl<T: FromInput> Action<T::Context> for SetSubcommand<'_, T> {
+impl<'a, T: FromInput<'a>> Action<T::Context> for SetSubcommand<'_, T> {
     fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {
         if let Some(s) = input.try_parse(context)? {
             *self.0 = s;
@@ -88,7 +88,7 @@ impl<T: FromInput> Action<T::Context> for SetSubcommand<'_, T> {
     }
 }
 
-impl<T: FromInput> Action<T::Context> for Set<'_, T> {
+impl<'a, T: FromInput<'a>> Action<T::Context> for Set<'_, T> {
     fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {
         if let Some(s) = T::try_from_input(input, context)? {
             *self.0 = s;

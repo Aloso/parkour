@@ -15,7 +15,8 @@ pub struct Error {
 }
 
 impl Error {
-    /// Attach context to the error.
+    /// Attach context to the error. Note that this overwrites the current
+    /// source, if there is one.
     ///
     /// ### Usage
     ///
@@ -37,6 +38,25 @@ impl Error {
         source: impl std::error::Error + Sync + Send + 'static,
     ) -> Self {
         Error { source: Some(Box::new(source)), ..self }
+    }
+
+    /// Attach context to the error. This function ensures that an already
+    /// attached source isn't discarded, but appended to the the new source. The
+    /// sources therefore form a singly linked list.
+    ///
+    /// ### Usage
+    ///
+    /// ```
+    /// use parkour::{Error, ErrorInner, util::Flag};
+    ///
+    /// Error::missing_value()
+    ///     .chain(ErrorInner::IncompleteValue(1))
+    /// # ;
+    /// ```
+    pub fn chain(mut self, source: ErrorInner) -> Self {
+        let mut new = Self::from(source);
+        new.source = self.source.take();
+        Error { source: Some(Box::new(new)), ..self }
     }
 
     /// Create a `NoValue` error

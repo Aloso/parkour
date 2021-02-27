@@ -54,7 +54,7 @@ struct Command {
     file: String,
 }
 
-impl FromInput for Command {
+impl FromInput<'static> for Command {
     type Context = ();
 
     fn from_input<P: Parse>(input: &mut P, _: &Self::Context)

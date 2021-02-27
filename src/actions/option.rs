@@ -1,20 +1,19 @@
 use crate::util::{ArgCtx, Flag, PosCtx};
-use crate::{Error, ErrorInner, FromInput, FromInputValue, Parse};
+use crate::{ErrorInner, FromInput, FromInputValue, Parse};
 
 use super::{
     Action, ApplyResult, Reset, Set, SetOnce, SetPositional, SetSubcommand, Unset,
 };
 
-impl<V: FromInputValue> Action<ArgCtx<'static, V::Context>> for Set<'_, Option<V>> {
+impl<'a, V: FromInputValue<'a>> Action<ArgCtx<'a, V::Context>> for Set<'_, Option<V>> {
     fn apply<P: Parse>(
         self,
         input: &mut P,
-        context: &ArgCtx<'static, V::Context>,
+        context: &ArgCtx<'a, V::Context>,
     ) -> ApplyResult {
-        match input
-            .try_parse(context)
-            .map_err(|e| e.with_source(Error::in_argument(&context.flag)))?
-        {
+        match input.try_parse(context).map_err(|e| {
+            e.chain(ErrorInner::InArgument(context.flag.first_to_string()))
+        })? {
             Some(s) => {
                 *self.0 = Some(s);
                 Ok(true)
@@ -24,16 +23,17 @@ impl<V: FromInputValue> Action<ArgCtx<'static, V::Context>> for Set<'_, Option<V
     }
 }
 
-impl<V: FromInputValue> Action<ArgCtx<'static, V::Context>> for SetOnce<'_, Option<V>> {
+impl<'a, V: FromInputValue<'a>> Action<ArgCtx<'a, V::Context>>
+    for SetOnce<'_, Option<V>>
+{
     fn apply<P: Parse>(
         self,
         input: &mut P,
-        context: &ArgCtx<'static, V::Context>,
+        context: &ArgCtx<'a, V::Context>,
     ) -> ApplyResult {
-        match input
-            .try_parse(context)
-            .map_err(|e| e.with_source(Error::in_argument(&context.flag)))?
-        {
+        match input.try_parse(context).map_err(|e| {
+            e.chain(ErrorInner::InArgument(context.flag.first_to_string()))
+        })? {
             Some(s) => {
                 if self.0.is_some() {
                     return Err(ErrorInner::TooManyArgOccurrences {
@@ -50,7 +50,7 @@ impl<V: FromInputValue> Action<ArgCtx<'static, V::Context>> for SetOnce<'_, Opti
     }
 }
 
-impl<'a, V: FromInputValue> Action<Flag<'a>> for Reset<'_, Option<V>> {
+impl<'a, V: FromInputValue<'a>> Action<Flag<'a>> for Reset<'_, Option<V>> {
     fn apply<P: Parse>(self, input: &mut P, context: &Flag<'a>) -> ApplyResult {
         if Flag::from_input(input, context)? {
             *self.0 = None;
@@ -61,7 +61,7 @@ impl<'a, V: FromInputValue> Action<Flag<'a>> for Reset<'_, Option<V>> {
     }
 }
 
-impl<'a, V: FromInputValue> Action<Flag<'a>> for Unset<'_, Option<V>> {
+impl<'a, V: FromInputValue<'a>> Action<Flag<'a>> for Unset<'_, Option<V>> {
     fn apply<P: Parse>(self, input: &mut P, context: &Flag<'a>) -> ApplyResult {
         if Flag::from_input(input, context)? {
             if self.0.is_none() {
@@ -79,7 +79,7 @@ impl<'a, V: FromInputValue> Action<Flag<'a>> for Unset<'_, Option<V>> {
     }
 }
 
-impl<'a, T: FromInputValue> Action<PosCtx<'a, T::Context>>
+impl<'a, T: FromInputValue<'a>> Action<PosCtx<'a, T::Context>>
     for SetPositional<'_, Option<T>>
 {
     fn apply<P: Parse>(
@@ -103,7 +103,7 @@ impl<'a, T: FromInputValue> Action<PosCtx<'a, T::Context>>
     }
 }
 
-impl<T: FromInput> Action<T::Context> for SetSubcommand<'_, Option<T>> {
+impl<'a, T: FromInput<'a>> Action<T::Context> for SetSubcommand<'_, Option<T>> {
     fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {
         if let Some(s) = input.try_parse(context)? {
             if self.0.is_some() {

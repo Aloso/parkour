@@ -29,13 +29,13 @@ impl StringCtx {
     }
 
     /// Sets `allow_leading_dashes` to true
-    pub fn allow_leading_dashes(mut self) -> Self {
-        self.allow_leading_dashes = true;
+    pub fn allow_leading_dashes(mut self, x: bool) -> Self {
+        self.allow_leading_dashes = x;
         self
     }
 }
 
-impl FromInputValue for String {
+impl FromInputValue<'static> for String {
     type Context = StringCtx;
 
     fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
@@ -64,7 +64,7 @@ impl FromInputValue for String {
     }
 }
 
-impl FromInputValue for OsString {
+impl FromInputValue<'static> for OsString {
     type Context = StringCtx;
 
     fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
@@ -93,7 +93,7 @@ impl FromInputValue for OsString {
     }
 }
 
-impl FromInputValue for PathBuf {
+impl FromInputValue<'static> for PathBuf {
     type Context = StringCtx;
 
     fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {
@@ -122,7 +122,7 @@ impl FromInputValue for PathBuf {
     }
 }
 
-impl FromInputValue for Cow<'static, str> {
+impl FromInputValue<'static> for Cow<'static, str> {
     type Context = StringCtx;
 
     fn from_input_value(value: &str, context: &StringCtx) -> Result<Self, Error> {

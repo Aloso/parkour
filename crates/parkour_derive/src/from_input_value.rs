@@ -79,7 +79,7 @@ pub fn enums(name: &Ident, e: DataEnum) -> Result<TokenStream> {
 
     let gen = quote! {
         #[automatically_derived]
-        impl parkour::FromInputValue for #name {
+        impl parkour::FromInputValue<'static> for #name {
             type Context = ();
 
             #from_input_value

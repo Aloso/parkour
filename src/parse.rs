@@ -13,7 +13,7 @@ use crate::{Error, ErrorInner, FromInput, FromInputValue};
 pub trait Parse: Input + Sized {
     /// Parse something using the [`FromInput`] trait
     #[inline]
-    fn parse<F: FromInput>(&mut self, context: &F::Context) -> Result<F, Error> {
+    fn parse<'a, F: FromInput<'a>>(&mut self, context: &F::Context) -> Result<F, Error> {
         F::from_input(self, context)
     }
 
@@ -31,7 +31,7 @@ pub trait Parse: Input + Sized {
     /// # Ok::<(), parkour::Error>(())
     /// ```
     #[inline]
-    fn try_parse<F: FromInput>(
+    fn try_parse<'a, F: FromInput<'a>>(
         &mut self,
         context: &F::Context,
     ) -> Result<Option<F>, Error> {
@@ -39,7 +39,7 @@ pub trait Parse: Input + Sized {
     }
 
     /// Parse a _value_ using the [`FromInputValue`] trait.
-    fn parse_value<V: FromInputValue>(
+    fn parse_value<'a, V: FromInputValue<'a>>(
         &mut self,
         context: &V::Context,
     ) -> Result<V, Error>;
@@ -58,7 +58,7 @@ pub trait Parse: Input + Sized {
     /// # Ok::<(), parkour::Error>(())
     /// ```
     #[inline]
-    fn try_parse_value<V: FromInputValue>(
+    fn try_parse_value<'a, V: FromInputValue<'a>>(
         &mut self,
         context: &V::Context,
     ) -> Result<Option<V>, Error> {
@@ -95,7 +95,7 @@ pub trait Parse: Input + Sized {
 
 impl<I: Input> Parse for I {
     #[inline]
-    fn parse_value<V: FromInputValue>(
+    fn parse_value<'a, V: FromInputValue<'a>>(
         &mut self,
         context: &V::Context,
     ) -> Result<V, Error> {

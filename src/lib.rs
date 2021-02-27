@@ -83,7 +83,7 @@
 //!     size: u8,
 //! }
 //!
-//! impl FromInput for Show {
+//! impl FromInput<'static> for Show {
 //!     type Context = ();
 //!
 //!     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
@@ -156,7 +156,7 @@
 //! #     color_space: ColorSpace,
 //! #     size: u8,
 //! # }
-//! # impl FromInput for Show {
+//! # impl FromInput<'static> for Show {
 //! #     type Context = ();
 //! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
 //! #         todo!()
@@ -168,7 +168,7 @@
 //!     show: Option<Show>,
 //! }
 //!
-//! impl FromInput for Command {
+//! impl FromInput<'static> for Command {
 //!     type Context = ();
 //!
 //!     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
@@ -202,7 +202,7 @@
 //! #     color: Option<bool>,
 //! #     show: Option<()>,
 //! # }
-//! # impl FromInput for Command {
+//! # impl FromInput<'static> for Command {
 //! #     type Context = ();
 //! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
 //! #         Ok(Command { color: None, show: None })
@@ -246,7 +246,7 @@
 //! #     color: Option<bool>,
 //! #     show: Option<()>,
 //! # }
-//! impl FromInput for Command {
+//! impl FromInput<'static> for Command {
 //!     type Context = ();
 //!
 //!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
@@ -279,7 +279,7 @@
 //! #     color: Option<bool>,
 //! #     show: Option<()>,
 //! # }
-//! impl FromInput for Command {
+//! impl FromInput<'static> for Command {
 //!     type Context = ();
 //!
 //!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {

@@ -1,7 +1,7 @@
 use crate::help::PossibleValues;
 use crate::{Error, FromInputValue};
 
-impl FromInputValue for bool {
+impl FromInputValue<'static> for bool {
     type Context = ();
 
     fn from_input_value(value: &str, context: &()) -> Result<Self, Error> {

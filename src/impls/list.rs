@@ -1,8 +1,12 @@
 use std::collections::{BTreeSet, HashSet, LinkedList, VecDeque};
 use std::hash::Hash;
+use std::iter::FromIterator;
 
-use crate::help::PossibleValues;
-use crate::{Error, ErrorInner, FromInputValue};
+use crate::actions::{Action, Set};
+use crate::util::Flag;
+use crate::{Error, ErrorInner, FromInput, FromInputValue, Parse, Result};
+
+use super::StringCtx;
 
 /// The parsing context for list-like types. This is used by the following types
 /// from the standard library:
@@ -22,7 +26,9 @@ use crate::{Error, ErrorInner, FromInputValue};
 /// If you want to allow the third syntax, use [`crate::actions::Append`]
 /// action, to make sure that all values are saved.
 #[derive(Debug)]
-pub struct ListCtx<C> {
+pub struct ListCtx<'a, C> {
+    /// The flag after which the values should be parsed.
+    pub flag: Flag<'a>,
     /// The maximum number of items that can be parsed at once. The default is
     /// `usize::MAX`.
     pub max_items: usize,
@@ -38,13 +44,14 @@ pub struct ListCtx<C> {
     ///
     /// Note that setting `greedy` to `true` is less problematic if the values
     /// can't start with a dash, because then it will stop consuming arguments
-    /// as soon as  it encounters an argument starting with a dash.
+    /// as soon as it encounters an argument starting with a dash.
     pub greedy: bool,
 }
 
-impl<C: Default> Default for ListCtx<C> {
-    fn default() -> Self {
+impl<'a, C: Default> From<Flag<'a>> for ListCtx<'a, C> {
+    fn from(flag: Flag<'a>) -> Self {
         ListCtx {
+            flag,
             max_items: usize::MAX,
             delimiter: Some(','),
             inner: C::default(),
@@ -53,302 +60,223 @@ impl<C: Default> Default for ListCtx<C> {
     }
 }
 
-// TODO: Fix these implementations:
-// Implement FromInput and not FromInputValue
+impl<'a, T, C: 'a> FromInput<'a> for Vec<T>
+where
+    T: FromInputValue<'a, Context = C>,
+{
+    type Context = ListCtx<'a, C>;
 
-/*
-impl<T: FromInputValue<Context = C>, C: Clone> FromInput for Vec<T> {
-    type Context = ListCtx<C>;
+    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+        let mut flag_set = false;
+        Set(&mut flag_set).apply(input, &context.flag)?;
 
-    fn from_input<P: Parse>(
-        input: &mut P,
-        context: Self::Context,
-    ) -> Result<Self, Error> {
-        if input.can_parse_value_no_whitespace() {
-            input.parse_value(context)
-        } else {
-            let mut values = Self::new();
-
-            if context.greedy {
-                for _ in 0..context.max_items {
-                    match input.parse_value(context.inner.clone()) {
-                        Err(Error::no_value) => break,
-                        Err(e) => return Err(e),
-                        Ok(value) => values.push(value),
-                    }
-                }
+        if flag_set {
+            if input.can_parse_value_no_whitespace() || context.delimiter.is_some() {
+                parse_list_no_ws(input, context)
             } else {
-                values.push(input.parse_value(context.inner)?);
+                parse_list_with_ws(input, context)
             }
+        } else {
+            Err(Error::no_value())
+        }
+    }
+}
 
+impl<'a, T, C: 'a> FromInput<'a> for VecDeque<T>
+where
+    T: FromInputValue<'a, Context = C>,
+{
+    type Context = ListCtx<'a, C>;
+
+    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+        let mut flag_set = false;
+        Set(&mut flag_set).apply(input, &context.flag)?;
+
+        if flag_set {
+            if input.can_parse_value_no_whitespace() || context.delimiter.is_some() {
+                parse_list_no_ws(input, context)
+            } else {
+                parse_list_with_ws(input, context)
+            }
+        } else {
+            Err(Error::no_value())
+        }
+    }
+}
+
+impl<'a, T, C: 'a> FromInput<'a> for LinkedList<T>
+where
+    T: FromInputValue<'a, Context = C>,
+{
+    type Context = ListCtx<'a, C>;
+
+    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+        let mut flag_set = false;
+        Set(&mut flag_set).apply(input, &context.flag)?;
+
+        if flag_set {
+            if input.can_parse_value_no_whitespace() || context.delimiter.is_some() {
+                parse_list_no_ws(input, context)
+            } else {
+                parse_list_with_ws(input, context)
+            }
+        } else {
+            Err(Error::no_value())
+        }
+    }
+}
+
+impl<'a, T, C: 'a> FromInput<'a> for BTreeSet<T>
+where
+    T: FromInputValue<'a, Context = C> + Ord,
+{
+    type Context = ListCtx<'a, C>;
+
+    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+        let mut flag_set = false;
+        Set(&mut flag_set).apply(input, &context.flag)?;
+
+        if flag_set {
+            if input.can_parse_value_no_whitespace() || context.delimiter.is_some() {
+                parse_list_no_ws(input, context)
+            } else {
+                parse_list_with_ws(input, context)
+            }
+        } else {
+            Err(Error::no_value())
+        }
+    }
+}
+
+impl<'a, T, C: 'a> FromInput<'a> for HashSet<T>
+where
+    T: FromInputValue<'a, Context = C> + Hash + Eq,
+{
+    type Context = ListCtx<'a, C>;
+
+    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+        let mut flag_set = false;
+        Set(&mut flag_set).apply(input, &context.flag)?;
+
+        if flag_set {
+            if input.can_parse_value_no_whitespace() || context.delimiter.is_some() {
+                parse_list_no_ws(input, context)
+            } else {
+                parse_list_with_ws(input, context)
+            }
+        } else {
+            Err(Error::no_value())
+        }
+    }
+}
+
+fn parse_list_no_ws<'a, L: List<T>, T: FromInputValue<'a>, P: Parse>(
+    input: &mut P,
+    context: &ListCtx<'a, T::Context>,
+) -> Result<L> {
+    let inner = &context.inner;
+
+    let value: String = input.parse_value(
+        &StringCtx::default().allow_leading_dashes(T::allow_leading_dashes(inner)),
+    )?;
+
+    if let Some(delim) = context.delimiter {
+        let values: L = value
+            .split(delim)
+            .map(|s| T::from_input_value(s, inner))
+            .enumerate()
+            .map(|(i, r)| r.map_err(|e| e.chain(ErrorInner::IncompleteValue(i))))
+            .collect::<Result<_>>()?;
+
+        let count = values.len();
+        if count <= context.max_items {
             Ok(values)
-        }
-    }
-}
-*/
-
-impl<T: FromInputValue<Context = C>, C> FromInputValue for Vec<T> {
-    type Context = ListCtx<C>;
-
-    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
-        if let Some(delim) = context.delimiter {
-            let values: Vec<T> = value
-                .split(delim)
-                .map(|s| T::from_input_value(s, &context.inner))
-                .collect::<Result<_, _>>()?;
-
-            let count = values.len();
-            if count <= context.max_items {
-                Ok(values)
-            } else {
-                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
-            }
         } else {
-            Ok(vec![T::from_input_value(value, &context.inner)?])
+            Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
         }
-    }
-
-    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
-        T::possible_values(&context.inner)
+    } else {
+        let value = T::from_input_value(&value, inner)?;
+        let mut list = L::default();
+        list.add(value);
+        Ok(list)
     }
 }
 
-/*
-impl<T: FromInputValue<Context = C>, C: Clone> FromInput for VecDeque<T> {
-    type Context = ListCtx<C>;
+fn parse_list_with_ws<'a, L: List<T>, T: FromInputValue<'a>, P: Parse>(
+    input: &mut P,
+    context: &ListCtx<'a, T::Context>,
+) -> Result<L> {
+    let first = input
+        .parse_value(&context.inner)
+        .map_err(|e| e.chain(ErrorInner::IncompleteValue(0)))?;
+    let mut list = L::default();
+    list.add(first);
 
-    fn from_input<P: Parse>(
-        input: &mut P,
-        context: Self::Context,
-    ) -> Result<Self, Error> {
-        if input.can_parse_value_no_whitespace() {
-            input.parse_value(context)
+    for i in 1..context.max_items {
+        if let Some(value) = input
+            .try_parse_value(&context.inner)
+            .map_err(|e| e.chain(ErrorInner::IncompleteValue(i)))?
+        {
+            list.add(value);
         } else {
-            let mut values = Self::new();
-
-            if context.greedy {
-                for _ in 0..context.max_items {
-                    match input.parse_value(context.inner.clone()) {
-                        Err(Error::no_value) => break,
-                        Err(e) => return Err(e),
-                        Ok(value) => values.push_back(value),
-                    }
-                }
-            } else {
-                values.push_back(input.parse_value(context.inner)?);
-            }
-
-            Ok(values)
+            break;
         }
     }
+
+    Ok(list)
 }
-*/
 
-impl<T: FromInputValue<Context = C>, C> FromInputValue for VecDeque<T> {
-    type Context = ListCtx<C>;
+trait List<T>: Default + FromIterator<T> {
+    fn add(&mut self, value: T);
+    fn len(&self) -> usize;
+}
 
-    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
-        if let Some(delim) = context.delimiter {
-            let values: VecDeque<T> = value
-                .split(delim)
-                .map(|s| T::from_input_value(s, &context.inner))
-                .collect::<Result<_, _>>()?;
-
-            let count = values.len();
-            if count <= context.max_items {
-                Ok(values)
-            } else {
-                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
-            }
-        } else {
-            let mut vec_deque = Self::with_capacity(1);
-            vec_deque.push_back(T::from_input_value(value, &context.inner)?);
-            Ok(vec_deque)
-        }
+impl<T> List<T> for Vec<T> {
+    fn add(&mut self, value: T) {
+        self.push(value)
     }
 
-    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
-        T::possible_values(&context.inner)
+    fn len(&self) -> usize {
+        self.len()
     }
 }
 
-/*
-impl<T: FromInputValue<Context = C>, C: Clone> FromInput for LinkedList<T> {
-    type Context = ListCtx<C>;
-
-    fn from_input<P: Parse>(
-        input: &mut P,
-        context: Self::Context,
-    ) -> Result<Self, Error> {
-        if input.can_parse_value_no_whitespace() {
-            input.parse_value(context)
-        } else {
-            let mut values = Self::new();
-
-            if context.greedy {
-                for _ in 0..context.max_items {
-                    match input.parse_value(context.inner.clone()) {
-                        Err(Error::no_value) => break,
-                        Err(e) => return Err(e),
-                        Ok(value) => values.push_back(value),
-                    }
-                }
-            } else {
-                values.push_back(input.parse_value(context.inner)?);
-            }
-
-            Ok(values)
-        }
-    }
-}
-*/
-
-impl<T: FromInputValue<Context = C>, C> FromInputValue for LinkedList<T> {
-    type Context = ListCtx<C>;
-
-    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
-        if let Some(delim) = context.delimiter {
-            let values: LinkedList<T> = value
-                .split(delim)
-                .map(|s| T::from_input_value(s, &context.inner))
-                .collect::<Result<_, _>>()?;
-
-            let count = values.len();
-            if count <= context.max_items {
-                Ok(values)
-            } else {
-                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
-            }
-        } else {
-            let mut list = Self::new();
-            list.push_back(T::from_input_value(value, &context.inner)?);
-            Ok(list)
-        }
+impl<T> List<T> for VecDeque<T> {
+    fn add(&mut self, value: T) {
+        self.push_back(value)
     }
 
-    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
-        T::possible_values(&context.inner)
+    fn len(&self) -> usize {
+        self.len()
     }
 }
 
-/*
-impl<T: FromInputValue<Context = C> + Ord, C: Clone> FromInput for BTreeSet<T> {
-    type Context = ListCtx<C>;
-
-    fn from_input<P: Parse>(
-        input: &mut P,
-        context: Self::Context,
-    ) -> Result<Self, Error> {
-        if input.can_parse_value_no_whitespace() {
-            input.parse_value(context)
-        } else {
-            let mut values = Self::new();
-
-            if context.greedy {
-                for _ in 0..context.max_items {
-                    match input.parse_value(context.inner.clone()) {
-                        Err(Error::no_value) => break,
-                        Err(e) => return Err(e),
-                        Ok(value) => {
-                            values.insert(value);
-                        }
-                    }
-                }
-            } else {
-                values.insert(input.parse_value(context.inner)?);
-            }
-
-            Ok(values)
-        }
-    }
-}
-*/
-
-impl<T: FromInputValue<Context = C> + Ord, C> FromInputValue for BTreeSet<T> {
-    type Context = ListCtx<C>;
-
-    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
-        if let Some(delim) = context.delimiter {
-            let values: BTreeSet<T> = value
-                .split(delim)
-                .map(|s| T::from_input_value(s, &context.inner))
-                .collect::<Result<_, _>>()?;
-
-            let count = values.len();
-            if count <= context.max_items {
-                Ok(values)
-            } else {
-                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
-            }
-        } else {
-            let mut vec_deque = Self::new();
-            vec_deque.insert(T::from_input_value(value, &context.inner)?);
-            Ok(vec_deque)
-        }
+impl<T> List<T> for LinkedList<T> {
+    fn add(&mut self, value: T) {
+        self.push_back(value)
     }
 
-    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
-        T::possible_values(&context.inner)
+    fn len(&self) -> usize {
+        self.len()
     }
 }
 
-/*
-impl<T: FromInputValue<Context = C> + Hash + Eq, C: Clone> FromInput for HashSet<T> {
-    type Context = ListCtx<C>;
+impl<T: Ord> List<T> for BTreeSet<T> {
+    fn add(&mut self, value: T) {
+        self.insert(value);
+    }
 
-    fn from_input<P: Parse>(
-        input: &mut P,
-        context: Self::Context,
-    ) -> Result<Self, Error> {
-        if input.can_parse_value_no_whitespace() {
-            input.parse_value(context)
-        } else {
-            let mut values = Self::new();
-
-            if context.greedy {
-                for _ in 0..context.max_items {
-                    match input.parse_value(context.inner.clone()) {
-                        Err(Error::no_value) => break,
-                        Err(e) => return Err(e),
-                        Ok(value) => {
-                            values.insert(value);
-                        }
-                    }
-                }
-            } else {
-                values.insert(input.parse_value(context.inner)?);
-            }
-
-            Ok(values)
-        }
+    fn len(&self) -> usize {
+        self.len()
     }
 }
-*/
 
-impl<T: FromInputValue<Context = C> + Hash + Eq, C> FromInputValue for HashSet<T> {
-    type Context = ListCtx<C>;
-
-    fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
-        if let Some(delim) = context.delimiter {
-            let values: HashSet<T> = value
-                .split(delim)
-                .map(|s| T::from_input_value(s, &context.inner))
-                .collect::<Result<_, _>>()?;
-
-            let count = values.len();
-            if count <= context.max_items {
-                Ok(values)
-            } else {
-                Err(ErrorInner::TooManyValues { max: context.max_items, count }.into())
-            }
-        } else {
-            let mut vec_deque = Self::with_capacity(1);
-            vec_deque.insert(T::from_input_value(value, &context.inner)?);
-            Ok(vec_deque)
-        }
+impl<T: Hash + Eq> List<T> for HashSet<T> {
+    fn add(&mut self, value: T) {
+        self.insert(value);
     }
 
-    fn possible_values(context: &Self::Context) -> Option<PossibleValues> {
-        T::possible_values(&context.inner)
+    fn len(&self) -> usize {
+        self.len()
     }
 }

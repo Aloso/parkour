@@ -21,7 +21,7 @@ impl<C: Default> Default for TupleCtx<C> {
 
 macro_rules! impl_tuple {
     ($( $t:ident $v:ident $i:tt ),* $(,)?) => {
-        impl<$( $t: FromInputValue ),*> FromInputValue for ($( $t ),* ,) {
+        impl<'a, $( $t: FromInputValue<'a> ),*> FromInputValue<'a> for ($( $t ),* ,) {
             type Context = TupleCtx<($( $t::Context ),* ,)>;
 
             fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {

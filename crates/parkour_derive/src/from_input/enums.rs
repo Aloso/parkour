@@ -31,15 +31,21 @@ pub fn enums(name: &Ident, e: DataEnum, attrs: Vec<Attribute>) -> Result<TokenSt
 
     let gen = quote! {
         #[automatically_derived]
-        impl parkour::FromInput for #name {
+        impl parkour::FromInput<'static> for #name {
             type Context = ();
 
             fn from_input<P: parkour::Parse>(input: &mut P, _: &Self::Context)
-                    -> parkour::Result<Self> {
+                    -> parkour::Result<Self>
+            {
                 #start_bump
+
+                if input.parse_long_flag("") {
+                    input.set_ignore_dashes(true);
+                }
+
                 #(
                     if input.parse_command(#empty_ident_strs) {
-                        // TODO: Parse -h, --help and -- by default
+                        // TODO: Parse -h and --help by default
                         input.expect_empty()?;
                         return Ok(#name::#empty_idents {});
                     }

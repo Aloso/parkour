@@ -21,7 +21,7 @@ impl<C: Default> Default for ArrayCtx<C> {
     }
 }
 
-impl<T: FromInputValue, const N: usize> FromInputValue for [T; N] {
+impl<'a, T: FromInputValue<'a>, const N: usize> FromInputValue<'a> for [T; N] {
     type Context = ArrayCtx<T::Context>;
 
     fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {

@@ -1,11 +1,21 @@
 use crate::help::PossibleValues;
 use crate::util::{ArgCtx, Flag};
-use crate::{Error, Parse};
+use crate::{Error, ErrorInner, Parse};
 
 /// Trait for extracting information from the command-line input. This is
 /// implemented for flags, positional and named arguments, subcommands, etc.
 ///
 /// ### Implementation
+///
+/// * Return `Err(parkour::Error::no_value())` if the parsed value isn't present
+/// * The lifetime parameter is for the context. If the context type doesn't
+///   have a lifetime, use `'static`.
+/// * Make sure that you consume exactly as much text as you need. Most methods
+///   from [`Parse`] should take care of this automatically. Avoid using
+///   lower-level functions, such as [`parkour::Input::current`] or
+///   [`parkour::Input::bump`], which might not advance the input correctly.
+///
+/// ### Example
 ///
 /// ```
 /// # use parkour::prelude::*;
@@ -20,10 +30,10 @@ use crate::{Error, Parse};
 ///     even: bool,
 /// }
 ///
-/// impl FromInput for Foo {
+/// impl FromInput<'static> for Foo {
 ///     type Context = FooCtx;
 ///
-///     fn from_input<P: Parse>(input: &mut P, context: &FooCtx) -> Result<Self, parkour::Error> {
+///     fn from_input<P: Parse>(input: &mut P, context: &FooCtx) -> parkour::Result<Self> {
 ///         let num: usize = input.parse_value(&Default::default())?;
 ///
 ///         if context.even && num % 2 != 0 {
@@ -42,9 +52,9 @@ use crate::{Error, Parse};
 ///     }
 /// }
 /// ```
-pub trait FromInput: Sized {
+pub trait FromInput<'a>: Sized {
     /// Information that is available while parsing
-    type Context;
+    type Context: 'a;
 
     /// Extract information from the command-line input.
     fn from_input<P: Parse>(
@@ -85,9 +95,12 @@ pub trait FromInput: Sized {
 /// To parse values, they are first converted to a string slice. By default, an
 /// argument that starts with a dash can't be parsed as a value, unless you
 /// implement the `allow_leading_dashes` method.
-pub trait FromInputValue: Sized {
+///
+/// The lifetime parameter is for the context. If the context type doesn't have
+/// a lifetime, use `'static`.
+pub trait FromInputValue<'a>: Sized {
     /// Information that is available while parsing
-    type Context;
+    type Context: 'a;
 
     /// The function that parses the string. This function is usually not
     /// invoked directly. Instead you can use [`Parse::parse_value`] and
@@ -104,7 +117,7 @@ pub trait FromInputValue: Sized {
     /// This function specifies whether this argument may start with leading
     /// dashes. For example, this returns `true` for numbers that can be
     /// negative. The default is `false`.
-    fn allow_leading_dashes(_context: &Self::Context) -> bool {
+    fn allow_leading_dashes(_: &Self::Context) -> bool {
         false
     }
 
@@ -112,8 +125,11 @@ pub trait FromInputValue: Sized {
     fn possible_values(context: &Self::Context) -> Option<PossibleValues>;
 }
 
-impl<T: FromInputValue> FromInput for T {
-    type Context = ArgCtx<'static, T::Context>;
+impl<'a, T: FromInputValue<'a>> FromInput<'a> for T
+where
+    T::Context: 'a,
+{
+    type Context = ArgCtx<'a, T::Context>;
 
     fn from_input<P: Parse>(
         input: &mut P,
@@ -122,10 +138,8 @@ impl<T: FromInputValue> FromInput for T {
         if Flag::from_input(input, &context.flag)? {
             match input.parse_value(&context.inner) {
                 Ok(value) => Ok(value),
-                Err(e) if e.is_no_value() => {
-                    Err(Error::missing_value()
-                        .with_source(Error::in_argument(&context.flag)))
-                }
+                Err(e) if e.is_no_value() => Err(Error::missing_value()
+                    .chain(ErrorInner::InArgument(context.flag.first_to_string()))),
                 Err(e) => Err(e),
             }
         } else {

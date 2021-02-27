@@ -12,8 +12,9 @@ pub struct NumberCtx<T> {
     pub max: T,
 }
 
-impl<T: Copy + PartialOrd + FromInputValue<Context = Self> + std::fmt::Display>
-    NumberCtx<T>
+impl<T> NumberCtx<T>
+where
+    T: Copy + PartialOrd + FromInputValue<'static, Context = Self> + std::fmt::Display,
 {
     fn must_include(&self, n: T) -> Result<T, Error> {
         if n >= self.min && n <= self.max {
@@ -42,7 +43,7 @@ macro_rules! default_impl {
 macro_rules! from_input_value {
     (signed -> $( $t:ident ),*) => {
         $(
-            impl FromInputValue for $t {
+            impl FromInputValue<'static> for $t {
                 type Context = NumberCtx<$t>;
 
                 fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -68,7 +69,7 @@ macro_rules! from_input_value {
     };
     (signed_nonzero -> $( $t:ident ),*) => {
         $(
-            impl FromInputValue for $t {
+            impl FromInputValue<'static> for $t {
                 type Context = NumberCtx<$t>;
 
                 fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -89,7 +90,7 @@ macro_rules! from_input_value {
     };
     (unsigned -> $( $t:ident ),*) => {
         $(
-            impl FromInputValue for $t {
+            impl FromInputValue<'static> for $t {
                 type Context = NumberCtx<$t>;
 
                 fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
@@ -108,7 +109,7 @@ macro_rules! from_input_value {
     };
     (float -> $( $t:ident ),*) => {
         $(
-            impl FromInputValue for $t {
+            impl FromInputValue<'static> for $t {
                 type Context = NumberCtx<$t>;
 
                 fn from_input_value(value: &str, context: &Self::Context) -> Result<Self, Error> {
