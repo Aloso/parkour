@@ -138,6 +138,10 @@ pub fn structs(
                         let mut #field_idents = #field_initials;
                     )*
                     while input.is_not_empty() {
+                        if input.parse_long_flag("") {
+                            input.set_ignore_dashes(true);
+                        }
+
                         #(
                             #(
                                 if parkour::actions::SetOnce(&mut #field_idents)
