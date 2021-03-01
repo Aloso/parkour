@@ -91,6 +91,17 @@ pub trait Parse: Input + Sized {
         }
         Ok(())
     }
+
+    /// Returns an error if the current argument is only partially consumed.
+    fn expect_end_of_argument(&mut self) -> Result<(), Error> {
+        if !self.can_parse_value_no_whitespace() {
+            return Err(ErrorInner::UnexpectedValue {
+                value: self.bump_argument().unwrap().to_string(),
+            }
+            .into());
+        }
+        Ok(())
+    }
 }
 
 impl<I: Input> Parse for I {

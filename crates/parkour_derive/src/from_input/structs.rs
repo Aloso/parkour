@@ -59,26 +59,23 @@ pub fn structs(
         for (attr, span) in attrs {
             if let Attr::Arg(a) = attr {
                 args.push(match a {
-                    Arg::Named { mut long, mut short } => {
+                    Arg::Named { long, short } => {
                         if long.is_empty() && short.is_empty() {
                             bail!(span, "no flags specified");
                         }
 
-                        let ident_str = utils::ident_to_flag_string(&ident);
+                        let main_flag = long
+                            .iter()
+                            .find_map(|f| f.as_deref().map(ToString::to_string))
+                            .unwrap_or_else(|| utils::ident_to_flag_string(ident));
 
                         if field_str.is_none() {
-                            if !long.is_empty() {
-                                let long = long[0].as_deref().unwrap_or(&ident_str);
-                                field_str = Some(format!("--{}", long));
-                            } else {
-                                let short = short[0].as_deref().unwrap_or(&ident_str);
-                                field_str = Some(format!("-{}", short));
-                            }
+                            field_str = Some(format!("--{}", &main_flag));
                         }
 
-                        check_flag_duplicates(span, &ident_str, &mut long, &mut short)?;
-
-                        generate_flag_context(&long, &short, &ident_str, ident)?
+                        let (long, short) =
+                            flatten_flags(span, &main_flag, &long, &short)?;
+                        generate_flag_context(&long, &short)
                     }
 
                     Arg::Positional { name: None } => {
@@ -150,69 +147,54 @@ pub fn structs(
     Ok(gen)
 }
 
-fn generate_flag_context(
-    long: &[Option<String>],
-    short: &[Option<String>],
-    ident_str: &str,
-    ident: &Ident,
-) -> Result<TokenStream> {
-    Ok(match (long.len(), short.len()) {
+fn generate_flag_context(long: &[&str], short: &[&str]) -> TokenStream {
+    match (long.len(), short.len()) {
         (1, 1) => {
-            let long = long[0].as_deref().unwrap_or(&ident_str);
-            let short = short[0]
-                .as_deref()
-                .map_or_else(|| utils::first_char(ident.span(), &long), Ok)?;
+            let long = long[0];
+            let short = short[0];
             quote! { parkour::util::Flag::LongShort(#long, #short).into() }
         }
         (0, 1) => {
-            let short = short[0]
-                .as_deref()
-                .map_or_else(|| utils::first_char(ident.span(), &ident_str), Ok)?;
+            let short = short[0];
             quote! { parkour::util::Flag::Short(#short).into() }
         }
         (1, 0) => {
-            let long = long[0].as_deref().unwrap_or(&ident_str);
+            let long = long[0];
             quote! { parkour::util::Flag::Long(#long).into() }
         }
-        (_, _) => {
-            let long: Vec<&str> =
-                long.iter().map(|l| l.as_deref().unwrap_or(&ident_str)).collect();
-            let short = short.iter().map(|l| l.as_deref().unwrap_or(long[0]));
-
-            quote! {
-                parkour::util::Flag::Many(vec![
-                    #( parkour::util::Flag::Long(#long), )*
-                    #( parkour::util::Flag::Short(#short), )*
-                ]).into()
-            }
-        }
-    })
+        (_, _) => quote! {
+            parkour::util::Flag::Many(vec![
+                #( parkour::util::Flag::Long(#long), )*
+                #( parkour::util::Flag::Short(#short), )*
+            ]).into()
+        },
+    }
 }
 
-fn check_flag_duplicates(
+fn flatten_flags<'a>(
     span: Span,
-    ident_str: &str,
-    long: &mut Vec<Option<String>>,
-    short: &mut Vec<Option<String>>,
-) -> Result<()> {
+    main_flag: &'a str,
+    long: &'a [Option<String>],
+    short: &'a [Option<String>],
+) -> Result<(Vec<&'a str>, Vec<&'a str>)> {
+    let main_short = utils::first_char(span, main_flag)?;
+
+    let mut long: Vec<&str> =
+        long.iter().map(|o| o.as_deref().unwrap_or(main_flag)).collect();
+    let mut short: Vec<&str> =
+        short.iter().map(|o| o.as_deref().unwrap_or(main_short)).collect();
+
     long.sort_unstable();
     short.sort_unstable();
 
     if let Some(w) = long.windows(2).find(|pair| pair[0] == pair[1]) {
-        bail!(
-            span,
-            "long flag {:?} is specified twice",
-            w[0].as_deref().unwrap_or(&ident_str),
-        );
+        bail!(span, "long flag {:?} is specified twice", w[0]);
     }
     if let Some(w) = short.windows(2).find(|pair| pair[0] == pair[1]) {
-        bail!(
-            span,
-            "short flag {:?} is specified twice",
-            w[0].as_deref().unwrap_or(utils::first_char(span, &ident_str)?),
-        );
+        bail!(span, "short flag {:?} is specified twice", w[0]);
     }
-    Ok(())
+
+    Ok((long, short))
 }
 
 fn get_subcommand_names(attrs: &[(Attr, Span)], name: &Ident) -> Result<Vec<String>> {

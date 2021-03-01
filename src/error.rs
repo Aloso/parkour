@@ -66,7 +66,7 @@ impl Error {
 
     /// Returns `true` if this is a `NoValue` error
     pub fn is_no_value(&self) -> bool {
-        self.inner == ErrorInner::NoValue
+        matches!(self.inner, ErrorInner::NoValue)
     }
 
     /// Create a `MissingValue` error
@@ -86,7 +86,7 @@ impl Error {
 
     /// Returns `true` if this is a `EarlyExit` error
     pub fn is_early_exit(&self) -> bool {
-        self.inner == ErrorInner::EarlyExit
+        matches!(self.inner, ErrorInner::EarlyExit)
     }
 
     /// Create a `UnexpectedValue` error
@@ -94,7 +94,7 @@ impl Error {
         got: impl ToString,
         expected: Option<PossibleValues>,
     ) -> Self {
-        ErrorInner::UnexpectedValue { got: got.to_string(), expected }.into()
+        ErrorInner::InvalidValue { got: got.to_string(), expected }.into()
     }
 
     /// Create a `MissingArgument` error
@@ -150,7 +150,7 @@ pub enum ErrorInner {
     InSubcommand(String),
 
     /// The parsed value doesn't meet our expectations
-    UnexpectedValue {
+    InvalidValue {
         /// The value we tried to parse
         got: String,
         /// The expectation that was violated. For example, this string can
@@ -184,6 +184,12 @@ pub enum ErrorInner {
     UnexpectedArgument {
         /// The (full) argument that wasn't expected
         arg: String,
+    },
+
+    /// The argument has a value, but no value was expected
+    UnexpectedValue {
+        /// The value of the argument
+        value: String,
     },
 
     /// An argument was provided more often than allowed
@@ -234,7 +240,7 @@ impl fmt::Display for Error {
             ErrorInner::InSubcommand(cmd) => {
                 write!(f, "in subcommand {}", cmd.escape_debug())
             }
-            ErrorInner::UnexpectedValue { expected, got } => {
+            ErrorInner::InvalidValue { expected, got } => {
                 if let Some(expected) = expected {
                     write!(
                         f,
@@ -248,6 +254,9 @@ impl fmt::Display for Error {
             }
             ErrorInner::UnexpectedArgument { arg } => {
                 write!(f, "unexpected argument `{}`", arg.escape_debug())
+            }
+            ErrorInner::UnexpectedValue { value } => {
+                write!(f, "unexpected value `{}`", value.escape_debug())
             }
             ErrorInner::TooManyValues { max, count } => {
                 write!(f, "too many values, expected at most {}, got {}", max, count)

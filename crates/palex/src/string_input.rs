@@ -181,3 +181,12 @@ impl<I: Iterator<Item = String>> Input for StringInput<I> {
         self.ignore_dashes
     }
 }
+
+type ToStringMapping = for<'r> fn(&'r str) -> String;
+type StringIter<'a> = std::iter::Map<std::str::Split<'a, char>, ToStringMapping>;
+
+impl<'a> From<&'a str> for StringInput<StringIter<'a>> {
+    fn from(s: &'a str) -> Self {
+        StringInput::new(s.split(' ').map(ToString::to_string))
+    }
+}

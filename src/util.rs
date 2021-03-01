@@ -41,13 +41,13 @@ impl Flag<'_> {
     /// Parses a flag from a [`Parse`] instance.
     pub fn from_input<'a, P: Parse>(input: &mut P, context: &Flag<'a>) -> ApplyResult {
         Ok(match context {
-            Flag::Short(f) => input.parse_short_flag(f),
-            Flag::Long(f) => input.parse_long_flag(f),
-            Flag::LongShort(l, s) => {
+            &Flag::Short(f) => input.parse_short_flag(f),
+            &Flag::Long(f) => input.parse_long_flag(f),
+            &Flag::LongShort(l, s) => {
                 input.parse_long_flag(l) || input.parse_short_flag(s)
             }
             Flag::Many(flags) => {
-                flags.iter().any(|flag| Self::from_input(input, flag).is_ok())
+                flags.iter().any(|flag| matches!(Self::from_input(input, flag), Ok(true)))
             }
         })
     }
