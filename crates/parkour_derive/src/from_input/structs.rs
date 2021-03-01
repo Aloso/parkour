@@ -1,6 +1,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{Attribute, Fields, Ident, Result};
+use syn::{
+    Attribute, Fields, GenericArgument, Ident, PathArguments, Result, Type, TypePath,
+};
 
 use crate::attrs::{Arg, Attr, Parkour};
 use crate::{attrs, utils};
@@ -46,12 +48,15 @@ pub fn structs(
     }
 
     let mut field_idents = Vec::new();
-    let mut field_strs = Vec::new();
+    let mut field_initials = Vec::new();
+    let mut field_getters = Vec::new();
     let mut contexts = Vec::new();
 
     for field in &s.fields {
         let attrs = attrs::parse(&field.attrs)?;
         let ident = field.ident.as_ref().expect("a field has no ident");
+
+        let ty = parse_my_type(&field.ty);
 
         let mut field_str = None;
 
@@ -103,8 +108,22 @@ pub fn structs(
         }
         contexts.push(args);
 
-        field_strs.push(field_str.expect("a field has no string"));
         field_idents.push(ident);
+
+        field_initials.push(match ty {
+            MyType::Bool => quote! { false },
+            _ => quote! { None },
+        });
+
+        let field_str = field_str.expect("a field has no string");
+        field_getters.push(match ty {
+            MyType::Bool | MyType::Option(_) => quote! {},
+            MyType::Other(_) => quote! {
+                .ok_or_else(|| {
+                    parkour::Error::missing_argument(#field_str)
+                })?
+            },
+        });
     }
 
     let gen = quote! {
@@ -116,7 +135,7 @@ pub fn structs(
                     -> parkour::Result<Self> {
                 if #main_condition {
                     #(
-                        let mut #field_idents = None;
+                        let mut #field_idents = #field_initials;
                     )*
                     while input.is_not_empty() {
                         #(
@@ -124,6 +143,7 @@ pub fn structs(
                                 if parkour::actions::SetOnce(&mut #field_idents)
                                     .apply(input, &#contexts)?
                                 {
+                                    input.expect_end_of_argument()?;
                                     continue;
                                 }
                             )*
@@ -133,9 +153,7 @@ pub fn structs(
                     }
                     Ok(#name {
                         #(
-                            #field_idents: #field_idents.ok_or_else(|| {
-                                parkour::Error::missing_argument(#field_strs)
-                            })?,
+                            #field_idents: #field_idents #field_getters,
                         )*
                     })
                 } else {
@@ -145,6 +163,50 @@ pub fn structs(
         }
     };
     Ok(gen)
+}
+
+enum MyType<'a> {
+    Bool,
+    Option(&'a Type),
+    Other(&'a Type),
+}
+
+fn is_bool(path: &TypePath) -> bool {
+    if path.qself.is_none() {
+        if let Some(ident) = path.path.get_ident() {
+            return ident == "bool";
+        }
+    }
+    false
+}
+
+fn parse_my_type(ty: &Type) -> MyType<'_> {
+    if let Type::Path(path) = ty {
+        if is_bool(&path) {
+            return MyType::Bool;
+        } else if path.qself.is_none() {
+            let segments = path.path.segments.iter().collect::<Vec<_>>();
+
+            let is_option = (segments.len() == 1 && segments[0].ident == "Option")
+                || (segments.len() == 3
+                    && (segments[0].ident == "std" || segments[0].ident == "core")
+                    && segments[0].arguments.is_empty()
+                    && segments[1].ident == "option"
+                    && segments[1].arguments.is_empty()
+                    && segments[2].ident == "Option");
+
+            if is_option {
+                if let PathArguments::AngleBracketed(a) =
+                    &segments[segments.len() - 1].arguments
+                {
+                    if let Some(GenericArgument::Type(t)) = a.args.iter().next() {
+                        return MyType::Option(t);
+                    }
+                }
+            }
+        }
+    }
+    MyType::Other(ty)
 }
 
 fn generate_flag_context(long: &[&str], short: &[&str]) -> TokenStream {

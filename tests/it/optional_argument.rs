@@ -7,7 +7,7 @@ use parkour::prelude::*;
 struct Command {
     #[arg(long = "color", long = "colour", short)] // --color,-c <always|auto|never>
     #[arg(long = "alias", short)] // --alias,-a <always|auto|never>
-    mode: ColorMode,
+    mode: Option<ColorMode>,
 }
 
 #[derive(FromInputValue, Debug, PartialEq)]
@@ -30,19 +30,19 @@ macro_rules! err {
 
 #[test]
 fn successes() {
-    ok!("$ -c always", Command { mode: ColorMode::Always });
-    ok!("$ -c=always", Command { mode: ColorMode::Always });
-    ok!("$ -cALwAyS", Command { mode: ColorMode::Always });
-    ok!("$ -a always", Command { mode: ColorMode::Always });
-    ok!("$ --color always", Command { mode: ColorMode::Always });
-    ok!("$ --color=always", Command { mode: ColorMode::Always });
-    ok!("$ --colour=always", Command { mode: ColorMode::Always });
-    ok!("$ --alias always", Command { mode: ColorMode::Always });
+    ok!("$", Command { mode: None });
+    ok!("$ -c always", Command { mode: Some(ColorMode::Always) });
+    ok!("$ -c=always", Command { mode: Some(ColorMode::Always) });
+    ok!("$ -cALwAyS", Command { mode: Some(ColorMode::Always) });
+    ok!("$ -a always", Command { mode: Some(ColorMode::Always) });
+    ok!("$ --color always", Command { mode: Some(ColorMode::Always) });
+    ok!("$ --color=always", Command { mode: Some(ColorMode::Always) });
+    ok!("$ --colour=always", Command { mode: Some(ColorMode::Always) });
+    ok!("$ --alias always", Command { mode: Some(ColorMode::Always) });
 }
 
 #[test]
 fn failures() {
-    err!("$", "required --color was not provided");
     err!("$ --color", "missing value: in `--color`: in `--color`");
     err!(
         "$ --color=",

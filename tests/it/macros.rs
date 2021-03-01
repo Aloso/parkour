@@ -3,7 +3,7 @@ macro_rules! assert_parse {
         let mut input = parkour::StringInput::from($c);
         match <$t>::from_input(&mut input, &()) {
             Ok(f) => {
-                panic!("Expected error `{:?}`, got {:?}", $err.escape_debug(), f);
+                panic!("Expected error `{}`, got {:?}", $err.escape_debug(), f);
             }
             Err(e) => {
                 use std::fmt::Write;
