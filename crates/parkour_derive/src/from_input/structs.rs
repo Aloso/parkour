@@ -131,8 +131,9 @@ pub fn structs(
         impl parkour::FromInput<'static> for #name {
             type Context = ();
 
-            fn from_input<P: parkour::Parse>(input: &mut P, _: &Self::Context)
-                    -> parkour::Result<Self> {
+            fn from_input(input: &mut parkour::ArgsInput, _: &Self::Context)
+                    -> parkour::Result<Self>
+            {
                 if #main_condition {
                     #(
                         let mut #field_idents = #field_initials;

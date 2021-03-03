@@ -86,7 +86,7 @@
 //! impl FromInput<'static> for Show {
 //!     type Context = ();
 //!
-//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
+//!     fn from_input(input: &mut ArgsInput, _: &()) -> parkour::Result<Self> {
 //!         if input.parse_command("show") {
 //!             let mut pos1 = None;
 //!             let mut color_space = None;
@@ -158,7 +158,7 @@
 //! # }
 //! # impl FromInput<'static> for Show {
 //! #     type Context = ();
-//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
+//! #     fn from_input(input: &mut ArgsInput, _: &()) -> parkour::Result<Self> {
 //! #         todo!()
 //! #     }
 //! # }
@@ -171,7 +171,7 @@
 //! impl FromInput<'static> for Command {
 //!     type Context = ();
 //!
-//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
+//!     fn from_input(input: &mut ArgsInput, _: &()) -> parkour::Result<Self> {
 //!         // discard the first argument, which is the path to the executable
 //!         input.bump_argument().unwrap();
 //!
@@ -204,7 +204,7 @@
 //! # }
 //! # impl FromInput<'static> for Command {
 //! #     type Context = ();
-//! #     fn from_input<P: Parse>(input: &mut P, _: &()) -> parkour::Result<Self> {
+//! #     fn from_input(input: &mut ArgsInput, _: &()) -> parkour::Result<Self> {
 //! #         Ok(Command { color: None, show: None })
 //! #     }
 //! # }
@@ -249,7 +249,7 @@
 //! impl FromInput<'static> for Command {
 //!     type Context = ();
 //!
-//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//!     fn from_input(input: &mut ArgsInput, _: &()) -> Result<Self, parkour::Error> {
 //! #       let color = None;
 //! #       let show = None;
 //!         // <snip>
@@ -282,7 +282,7 @@
 //! impl FromInput<'static> for Command {
 //!     type Context = ();
 //!
-//!     fn from_input<P: Parse>(input: &mut P, _: &()) -> Result<Self, parkour::Error> {
+//!     fn from_input(input: &mut ArgsInput, _: &()) -> Result<Self, parkour::Error> {
 //! #       let color = None;
 //! #       let show = None;
 //!         // <snip>
@@ -308,7 +308,7 @@ pub use error::{Error, ErrorInner};
 pub use from_input::{FromInput, FromInputValue};
 pub use parse::Parse;
 
-pub use palex::{Input, StringInput};
+pub use palex::ArgsInput;
 
 #[cfg(feature = "derive")]
 pub use parkour_derive::{FromInput, FromInputValue};
@@ -324,10 +324,10 @@ pub mod util;
 /// A parkour result.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Create a new instance of the [`Parse`] trait, which can be used to parse the
+/// Create a new parser, which can be used to parse the
 /// command-line arguments of the program.
-pub fn parser() -> impl Parse {
-    StringInput::new(std::env::args())
+pub fn parser() -> ArgsInput {
+    ArgsInput::from_args()
 }
 
 /// A prelude to make it easier to import all the needed types and traits. Use
@@ -343,5 +343,5 @@ pub mod prelude {
     };
     pub use crate::impls::{ListCtx, NumberCtx, StringCtx};
     pub use crate::util::{ArgCtx, Flag, PosCtx};
-    pub use crate::{FromInput, FromInputValue, Parse};
+    pub use crate::{ArgsInput, FromInput, FromInputValue, Parse};
 }

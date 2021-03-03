@@ -1,21 +1,15 @@
-use palex::Input;
+use palex::ArgsInput;
 
 use crate::{Error, ErrorInner, FromInput, FromInputValue};
 
-/// An extension trait of [`palex::Input`], the trait for types that can produce
-/// tokens from a list of command-line arguments.
+/// An extension trait of [`palex::ArgsInput`], the trait for types that can
+/// produce tokens from a list of command-line arguments.
 ///
 /// This trait provides several convenience methods for parsing different
 /// things.
-///
-/// Note that this trait is automatically implemented for all types that
-/// implement `Input`.
-pub trait Parse: Input + Sized {
+pub trait Parse: Sized {
     /// Parse something using the [`FromInput`] trait
-    #[inline]
-    fn parse<'a, F: FromInput<'a>>(&mut self, context: &F::Context) -> Result<F, Error> {
-        F::from_input(self, context)
-    }
+    fn parse<'a, F: FromInput<'a>>(&mut self, context: &F::Context) -> Result<F, Error>;
 
     /// Parse something using the [`FromInput`] trait, but convert
     /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
@@ -23,20 +17,17 @@ pub trait Parse: Input + Sized {
     ///
     /// ```no_run
     /// # use parkour::prelude::*;
-    /// # let input: parkour::StringInput = todo!();
+    /// # let input: parkour::ArgsInput = todo!();
     /// if let Some(x) = input.try_parse(&Flag::Short("o").into())? {
     ///     // do something with x
     /// #  let _: usize = x;
     /// }
     /// # Ok::<(), parkour::Error>(())
     /// ```
-    #[inline]
     fn try_parse<'a, F: FromInput<'a>>(
         &mut self,
         context: &F::Context,
-    ) -> Result<Option<F>, Error> {
-        F::try_from_input(self, context)
-    }
+    ) -> Result<Option<F>, Error>;
 
     /// Parse a _value_ using the [`FromInputValue`] trait.
     fn parse_value<'a, V: FromInputValue<'a>>(
@@ -50,7 +41,7 @@ pub trait Parse: Input + Sized {
     ///
     /// ```no_run
     /// # use parkour::prelude::*;
-    /// # let input: parkour::StringInput = todo!();
+    /// # let input: parkour::ArgsInput = todo!();
     /// if let Some(value) = input.try_parse_value(&Default::default())? {
     ///     // do something with value
     /// #  let _: usize = value;
@@ -82,29 +73,26 @@ pub trait Parse: Input + Sized {
     fn parse_command(&mut self, command: &str) -> bool;
 
     /// Returns an error if the input is not yet empty.
-    fn expect_empty(&mut self) -> Result<(), Error> {
-        if !self.is_empty() {
-            return Err(ErrorInner::UnexpectedArgument {
-                arg: self.bump_argument().unwrap().to_string(),
-            }
-            .into());
-        }
-        Ok(())
-    }
+    fn expect_empty(&mut self) -> Result<(), Error>;
 
     /// Returns an error if the current argument is only partially consumed.
-    fn expect_end_of_argument(&mut self) -> Result<(), Error> {
-        if self.can_parse_value_no_whitespace() {
-            return Err(ErrorInner::UnexpectedValue {
-                value: self.bump_argument().unwrap().to_string(),
-            }
-            .into());
-        }
-        Ok(())
-    }
+    fn expect_end_of_argument(&mut self) -> Result<(), Error>;
 }
 
-impl<I: Input> Parse for I {
+impl Parse for ArgsInput {
+    #[inline]
+    fn parse<'a, F: FromInput<'a>>(&mut self, context: &F::Context) -> Result<F, Error> {
+        F::from_input(self, context)
+    }
+
+    #[inline]
+    fn try_parse<'a, F: FromInput<'a>>(
+        &mut self,
+        context: &F::Context,
+    ) -> Result<Option<F>, Error> {
+        F::try_from_input(self, context)
+    }
+
     #[inline]
     fn parse_value<'a, V: FromInputValue<'a>>(
         &mut self,
@@ -136,5 +124,25 @@ impl<I: Input> Parse for I {
     #[inline]
     fn parse_command(&mut self, command: &str) -> bool {
         self.eat_no_dash(command).is_some()
+    }
+
+    fn expect_empty(&mut self) -> Result<(), Error> {
+        if !self.is_empty() {
+            return Err(ErrorInner::UnexpectedArgument {
+                arg: self.bump_argument().unwrap().to_string(),
+            }
+            .into());
+        }
+        Ok(())
+    }
+
+    fn expect_end_of_argument(&mut self) -> Result<(), Error> {
+        if self.can_parse_value_no_whitespace() {
+            return Err(ErrorInner::UnexpectedValue {
+                value: self.bump_argument().unwrap().to_string(),
+            }
+            .into());
+        }
+        Ok(())
     }
 }

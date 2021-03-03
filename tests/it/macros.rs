@@ -1,6 +1,6 @@
 macro_rules! assert_parse {
     ($t:ty, $c:literal, $err:literal) => {
-        let mut input = parkour::StringInput::from($c);
+        let mut input = parkour::ArgsInput::from($c);
         match <$t>::from_input(&mut input, &()) {
             Ok(f) => {
                 panic!("Expected error `{}`, got {:?}", $err.escape_debug(), f);
@@ -21,7 +21,7 @@ macro_rules! assert_parse {
         }
     };
     ($t:ty, $c:literal, $e:expr) => {
-        let mut input = parkour::StringInput::from($c);
+        let mut input = parkour::ArgsInput::from($c);
         match <$t>::from_input(&mut input, &()) {
             Ok(f) => {
                 assert_eq!(f, $e);

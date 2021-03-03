@@ -1,6 +1,6 @@
 use std::vec::IntoIter;
 
-use crate::{Input, StringInput};
+use crate::ArgsInput;
 
 fn input(s: &'static str) -> IntoIter<String> {
     let v: Vec<String> = s.split(' ').map(ToString::to_string).collect();
@@ -9,7 +9,7 @@ fn input(s: &'static str) -> IntoIter<String> {
 
 #[test]
 fn test_no_dash_1() {
-    let mut input = StringInput::new(input("ab c def"));
+    let mut input = ArgsInput::new(input("ab c def"));
     assert_eq!(input.eat_no_dash("ab"), Some("ab"));
     assert_eq!(input.eat_no_dash("cd"), None);
     assert_eq!(input.eat_no_dash("c"), Some("c"));
@@ -21,7 +21,7 @@ fn test_no_dash_1() {
 
 #[test]
 fn test_no_dash_2() {
-    let mut input = StringInput::new(input("ab c-d=e -fg"));
+    let mut input = ArgsInput::new(input("ab c-d=e -fg"));
     assert_eq!(input.eat_no_dash("ab"), Some("ab"));
     assert_eq!(input.eat_no_dash("c-d=e"), Some("c-d=e"));
     assert_eq!(input.eat_no_dash("fg"), None);
@@ -30,7 +30,7 @@ fn test_no_dash_2() {
 
 #[test]
 fn test_no_dash_3() {
-    let mut input = StringInput::new(input("ab --cd=e -fg"));
+    let mut input = ArgsInput::new(input("ab --cd=e -fg"));
     input.bump(1);
     assert_eq!(input.eat_no_dash("b"), Some("b"));
     assert_eq!(input.eat_two_dashes("cd"), Some("cd"));
@@ -42,7 +42,7 @@ fn test_no_dash_3() {
 
 #[test]
 fn test_one_dash_1() {
-    let mut input = StringInput::new(input("-cde=f -gh= - --"));
+    let mut input = ArgsInput::new(input("-cde=f -gh= - --"));
     assert_eq!(input.eat_one_dash("c"), Some("c"));
     assert_eq!(input.eat_one_dash("de"), Some("de"));
     assert_eq!(input.eat_value("f"), Some("f"));
@@ -57,7 +57,7 @@ fn test_one_dash_1() {
 
 #[test]
 fn test_one_dash_2() {
-    let mut input = StringInput::new(input("-a-b=c -d=e"));
+    let mut input = ArgsInput::new(input("-a-b=c -d=e"));
     assert_eq!(input.eat_one_dash("a"), Some("a"));
     assert_eq!(input.eat_one_dash("-b"), Some("-b"));
     assert_eq!(input.eat_one_dash("="), None);
@@ -68,7 +68,7 @@ fn test_one_dash_2() {
 
 #[test]
 fn test_one_dash_3() {
-    let mut input = StringInput::new(input("--abc=-def -g=h i"));
+    let mut input = ArgsInput::new(input("--abc=-def -g=h i"));
     assert_eq!(input.eat_one_dash("-"), None);
     assert_eq!(input.eat_one_dash("a"), None);
     assert_eq!(input.eat_two_dashes("abc"), Some("abc"));
@@ -84,7 +84,7 @@ fn test_one_dash_3() {
 
 #[test]
 fn test_two_dashes_1() {
-    let mut input = StringInput::new(input("-- --abc --d=e --f=g"));
+    let mut input = ArgsInput::new(input("-- --abc --d=e --f=g"));
     assert_eq!(input.eat_two_dashes(""), Some(""));
     assert_eq!(input.eat_two_dashes("ab"), None);
     assert_eq!(input.eat_two_dashes("abc"), Some("abc"));
@@ -97,7 +97,7 @@ fn test_two_dashes_1() {
 
 #[test]
 fn test_two_dashes_2() {
-    let mut input = StringInput::new(input("--a=b c--d -e--f"));
+    let mut input = ArgsInput::new(input("--a=b c--d -e--f"));
     assert_eq!(input.eat_two_dashes("a"), Some("a"));
     assert_eq!(input.eat_two_dashes("b"), None);
     assert_eq!(input.eat_value("b"), Some("b"));
@@ -110,7 +110,7 @@ fn test_two_dashes_2() {
 
 #[test]
 fn test_value() {
-    let mut input = StringInput::new(input("ab -cde fg -hi --jk --l=-m -n=--o"));
+    let mut input = ArgsInput::new(input("ab -cde fg -hi --jk --l=-m -n=--o"));
     assert_eq!(input.eat_value("ab"), Some("ab"));
     assert_eq!(input.eat_one_dash("c"), Some("c"));
     assert_eq!(input.eat_value("de"), Some("de"));
@@ -128,7 +128,7 @@ fn test_value() {
 
 #[test]
 fn test_value_allows_leading_dashes() {
-    let mut input = StringInput::new(input("ab -cde fg -hi --jk --l=-m -n=--o"));
+    let mut input = ArgsInput::new(input("ab -cde fg -hi --jk --l=-m -n=--o"));
     assert_eq!(input.eat_value_allows_leading_dashes("ab"), Some("ab"));
     assert_eq!(input.eat_value_allows_leading_dashes("-c"), None);
     assert_eq!(input.eat_value_allows_leading_dashes("-cde"), Some("-cde"));
@@ -145,7 +145,7 @@ fn test_value_allows_leading_dashes() {
 #[test]
 fn test_modes() {
     {
-        let mut input = StringInput::new(input("-a --b c"));
+        let mut input = ArgsInput::new(input("-a --b c"));
         assert_eq!(input.eat_no_dash("-a"), None);
         assert_eq!(input.eat_one_dash("a"), Some("a"));
         assert_eq!(input.eat_no_dash("--b"), None);
@@ -153,7 +153,7 @@ fn test_modes() {
         assert_eq!(input.eat_no_dash("c"), Some("c"));
     }
     {
-        let mut input = StringInput::new(input("-a --b c"));
+        let mut input = ArgsInput::new(input("-a --b c"));
         input.set_ignore_dashes(true);
         assert_eq!(input.eat_one_dash("a"), None);
         assert_eq!(input.eat_no_dash("-a"), Some("-a"));

@@ -34,7 +34,7 @@ pub fn enums(name: &Ident, e: DataEnum, attrs: Vec<Attribute>) -> Result<TokenSt
         impl parkour::FromInput<'static> for #name {
             type Context = ();
 
-            fn from_input<P: parkour::Parse>(input: &mut P, _: &Self::Context)
+            fn from_input(input: &mut parkour::ArgsInput, _: &Self::Context)
                     -> parkour::Result<Self>
             {
                 #start_bump

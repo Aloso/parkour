@@ -9,12 +9,10 @@
 //!
 //! Check the `examples` folder for examples.
 
-pub use input::Input;
-pub use string_input::StringInput;
+pub use input::ArgsInput;
 pub use token_kind::TokenKind;
 
 mod input;
-mod string_input;
 mod token_kind;
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-use palex::{Input, StringInput};
+use palex::ArgsInput;
 
 #[derive(Debug)]
 struct Subcommand {
@@ -8,7 +8,7 @@ struct Subcommand {
 }
 
 pub fn main() -> Result<(), String> {
-    let mut input = StringInput::new(std::env::args());
+    let mut input = ArgsInput::from_args();
 
     // Ignore the first argument
     input.bump_argument().unwrap();
@@ -87,7 +87,7 @@ pub fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn parse_subcommand(input: &mut impl palex::Input) -> Result<Option<Subcommand>, String> {
+fn parse_subcommand(input: &mut ArgsInput) -> Result<Option<Subcommand>, String> {
     let mut subcommand: Option<Subcommand> = None;
 
     while !input.is_empty() {
@@ -110,7 +110,7 @@ fn parse_subcommand(input: &mut impl palex::Input) -> Result<Option<Subcommand>,
     Ok(subcommand)
 }
 
-fn parse_rgb(input: &mut impl palex::Input) -> Result<Option<Subcommand>, String> {
+fn parse_rgb(input: &mut ArgsInput) -> Result<Option<Subcommand>, String> {
     let mut subcommand: Option<Subcommand> = None;
 
     // Required argument with 3 values. They can be comma-separated, e.g.

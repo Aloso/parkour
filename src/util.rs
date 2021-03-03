@@ -3,6 +3,8 @@
 use std::fmt;
 use std::fmt::Write as _;
 
+use palex::ArgsInput;
+
 use crate::actions::ApplyResult;
 use crate::Parse;
 
@@ -39,7 +41,7 @@ impl Flag<'_> {
     }
 
     /// Parses a flag from a [`Parse`] instance.
-    pub fn from_input<'a, P: Parse>(input: &mut P, context: &Flag<'a>) -> ApplyResult {
+    pub fn from_input<'a>(input: &mut ArgsInput, context: &Flag<'a>) -> ApplyResult {
         Ok(match context {
             &Flag::Short(f) => input.parse_short_flag(f),
             &Flag::Long(f) => input.parse_long_flag(f),

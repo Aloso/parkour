@@ -18,6 +18,8 @@
 //! use parkour::prelude::*;
 //! ```
 
+use palex::ArgsInput;
+
 use crate::{Error, FromInput, FromInputValue, Parse};
 
 mod bool;
@@ -31,7 +33,7 @@ pub type ApplyResult = Result<bool, Error>;
 /// specified at most once.
 pub trait Action<C> {
     /// Perform the action.
-    fn apply<P: Parse>(self, input: &mut P, context: &C) -> ApplyResult;
+    fn apply(self, input: &mut ArgsInput, context: &C) -> ApplyResult;
 }
 
 /// Set the parsed value, ensuring that it is set at most once. When the action
@@ -67,7 +69,7 @@ pub struct SetPositional<'a, T>(pub &'a mut T);
 pub struct SetSubcommand<'a, T>(pub &'a mut T);
 
 impl<'a, T: FromInputValue<'a>> Action<T::Context> for SetPositional<'_, T> {
-    fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {
+    fn apply(self, input: &mut ArgsInput, context: &T::Context) -> ApplyResult {
         if let Some(s) = input.try_parse_value(context)? {
             *self.0 = s;
             Ok(true)
@@ -78,7 +80,7 @@ impl<'a, T: FromInputValue<'a>> Action<T::Context> for SetPositional<'_, T> {
 }
 
 impl<'a, T: FromInput<'a>> Action<T::Context> for SetSubcommand<'_, T> {
-    fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {
+    fn apply(self, input: &mut ArgsInput, context: &T::Context) -> ApplyResult {
         if let Some(s) = input.try_parse(context)? {
             *self.0 = s;
             Ok(true)
@@ -89,7 +91,7 @@ impl<'a, T: FromInput<'a>> Action<T::Context> for SetSubcommand<'_, T> {
 }
 
 impl<'a, T: FromInput<'a>> Action<T::Context> for Set<'_, T> {
-    fn apply<P: Parse>(self, input: &mut P, context: &T::Context) -> ApplyResult {
+    fn apply(self, input: &mut ArgsInput, context: &T::Context) -> ApplyResult {
         if let Some(s) = T::try_from_input(input, context)? {
             *self.0 = s;
             Ok(true)

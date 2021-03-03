@@ -1,3 +1,5 @@
+use palex::ArgsInput;
+
 use crate::help::PossibleValues;
 use crate::util::{ArgCtx, Flag};
 use crate::{Error, ErrorInner, Parse};
@@ -12,8 +14,8 @@ use crate::{Error, ErrorInner, Parse};
 ///   have a lifetime, use `'static`.
 /// * Make sure that you consume exactly as much text as you need. Most methods
 ///   from [`Parse`] should take care of this automatically. Avoid using
-///   lower-level functions, such as [`parkour::Input::current`] or
-///   [`parkour::Input::bump`], which might not advance the input correctly.
+///   lower-level functions, such as [`parkour::ArgsInput::current`] or
+///   [`parkour::ArgsInput::bump`], which might not advance the input correctly.
 ///
 /// ### Example
 ///
@@ -33,7 +35,7 @@ use crate::{Error, ErrorInner, Parse};
 /// impl FromInput<'static> for Foo {
 ///     type Context = FooCtx;
 ///
-///     fn from_input<P: Parse>(input: &mut P, context: &FooCtx) -> parkour::Result<Self> {
+///     fn from_input(input: &mut ArgsInput, context: &FooCtx) -> parkour::Result<Self> {
 ///         let num: usize = input.parse_value(&Default::default())?;
 ///
 ///         if context.even && num % 2 != 0 {
@@ -57,10 +59,7 @@ pub trait FromInput<'a>: Sized {
     type Context: 'a;
 
     /// Extract information from the command-line input.
-    fn from_input<P: Parse>(
-        input: &mut P,
-        context: &Self::Context,
-    ) -> Result<Self, Error>;
+    fn from_input(input: &mut ArgsInput, context: &Self::Context) -> Result<Self, Error>;
 
     /// Extract information from the command-line input, but convert
     /// [`Error::no_value`] to [`Option::None`]. This is useful when you want to
@@ -68,14 +67,14 @@ pub trait FromInput<'a>: Sized {
     ///
     /// ```no_run
     /// # use parkour::prelude::*;
-    /// # let input: &mut parkour::StringInput = todo!();
+    /// # let input: &mut parkour::ArgsInput = todo!();
     /// if let Some(value) = bool::try_from_input(input, &Flag::Short("b").into())? {
     ///     // do something with value
     /// }
     /// # Ok::<(), parkour::Error>(())
     /// ```
-    fn try_from_input<P: Parse>(
-        input: &mut P,
+    fn try_from_input(
+        input: &mut ArgsInput,
         context: &Self::Context,
     ) -> Result<Option<Self>, Error> {
         match Self::from_input(input, context) {
@@ -131,10 +130,7 @@ where
 {
     type Context = ArgCtx<'a, T::Context>;
 
-    fn from_input<P: Parse>(
-        input: &mut P,
-        context: &Self::Context,
-    ) -> Result<Self, Error> {
+    fn from_input(input: &mut ArgsInput, context: &Self::Context) -> Result<Self, Error> {
         if Flag::from_input(input, &context.flag)? {
             match input.parse_value(&context.inner) {
                 Ok(value) => Ok(value),

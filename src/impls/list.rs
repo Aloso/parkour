@@ -2,6 +2,8 @@ use std::collections::{BTreeSet, HashSet, LinkedList, VecDeque};
 use std::hash::Hash;
 use std::iter::FromIterator;
 
+use palex::ArgsInput;
+
 use crate::actions::{Action, Set};
 use crate::util::Flag;
 use crate::{Error, ErrorInner, FromInput, FromInputValue, Parse, Result};
@@ -66,7 +68,7 @@ where
 {
     type Context = ListCtx<'a, C>;
 
-    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+    fn from_input(input: &mut ArgsInput, context: &Self::Context) -> Result<Self> {
         let mut flag_set = false;
         Set(&mut flag_set).apply(input, &context.flag)?;
 
@@ -88,7 +90,7 @@ where
 {
     type Context = ListCtx<'a, C>;
 
-    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+    fn from_input(input: &mut ArgsInput, context: &Self::Context) -> Result<Self> {
         let mut flag_set = false;
         Set(&mut flag_set).apply(input, &context.flag)?;
 
@@ -110,7 +112,7 @@ where
 {
     type Context = ListCtx<'a, C>;
 
-    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+    fn from_input(input: &mut ArgsInput, context: &Self::Context) -> Result<Self> {
         let mut flag_set = false;
         Set(&mut flag_set).apply(input, &context.flag)?;
 
@@ -132,7 +134,7 @@ where
 {
     type Context = ListCtx<'a, C>;
 
-    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+    fn from_input(input: &mut ArgsInput, context: &Self::Context) -> Result<Self> {
         let mut flag_set = false;
         Set(&mut flag_set).apply(input, &context.flag)?;
 
@@ -154,7 +156,7 @@ where
 {
     type Context = ListCtx<'a, C>;
 
-    fn from_input<P: Parse>(input: &mut P, context: &Self::Context) -> Result<Self> {
+    fn from_input(input: &mut ArgsInput, context: &Self::Context) -> Result<Self> {
         let mut flag_set = false;
         Set(&mut flag_set).apply(input, &context.flag)?;
 
@@ -170,8 +172,8 @@ where
     }
 }
 
-fn parse_list_no_ws<'a, L: List<T>, T: FromInputValue<'a>, P: Parse>(
-    input: &mut P,
+fn parse_list_no_ws<'a, L: List<T>, T: FromInputValue<'a>>(
+    input: &mut ArgsInput,
     context: &ListCtx<'a, T::Context>,
 ) -> Result<L> {
     let inner = &context.inner;
@@ -202,8 +204,8 @@ fn parse_list_no_ws<'a, L: List<T>, T: FromInputValue<'a>, P: Parse>(
     }
 }
 
-fn parse_list_with_ws<'a, L: List<T>, T: FromInputValue<'a>, P: Parse>(
-    input: &mut P,
+fn parse_list_with_ws<'a, L: List<T>, T: FromInputValue<'a>>(
+    input: &mut ArgsInput,
     context: &ListCtx<'a, T::Context>,
 ) -> Result<L> {
     let first = input

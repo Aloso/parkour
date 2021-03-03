@@ -14,9 +14,15 @@ documentation = "https://docs.rs/parkour"
 repository = "https://github.com/Aloso/parkour"
 
 [dependencies]
-palex = { version = "0.1.0", path = "crates/palex" }
-parkour_derive = { version = "0.1.0", path = "crates/parkour_derive", optional = true }
+palex = { version = "0.2.0", path = "crates/palex" }
+parkour_derive = { version = "0.2.0", path = "crates/parkour_derive", optional = true }
 
 [features]
 derive = ["parkour_derive"]
+dyn_iter = ["palex/dyn_iter"]
 default = ["derive"]
+
+[[test]]
+name = "it"
+path = "tests/it/main.rs"
+required-features = ["dyn_iter"]

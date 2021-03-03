@@ -57,7 +57,7 @@ struct Command {
 impl FromInput<'static> for Command {
     type Context = ();
 
-    fn from_input<P: Parse>(input: &mut P, _: &Self::Context)
+    fn from_input(input: &mut ArgsInput, _: &Self::Context)
         -> Result<Self, parkour::Error> {
         // discard the first argument
         input.bump_argument().unwrap();
@@ -137,7 +137,7 @@ struct Bar {
     dry_run: bool,
 }
 
-fn print_version(_: &mut impl Parse) -> parkour::Result<()> {
+fn print_version(_: &mut ArgsInput) -> parkour::Result<()> {
     println!("command {}", env!("CARGO_PKG_VERSION"));
     Err(parkour::Error::early_exit())
 }
